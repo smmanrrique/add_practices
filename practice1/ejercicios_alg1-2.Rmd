@@ -1,0 +1,210 @@
+---
+title: "Ejercicio 1: BaseDatosPlasmaCompleta"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Shamuel Manrrique NIP: 802400
+
+
+# Import libraries
+
+```{r}
+library("Rcmdr")
+library("ggplot2")
+library("dplyr")          ## load
+```
+
+## Cargarmos los datos que se encuentran en BaseDatosPlasmaCompleta.RData
+
+```{r}
+load("C:/Users/smmanrrique/OneDrive - HIBERUS SISTEMAS INFORMATICOS S.L/Documentos/BaseDatosPlasmaCompleta.RData")
+```
+
+## Obtenemos un resumen general de la información del dataset
+```{r}
+
+summary(Dataset)
+
+```
+
+## Analisis conjunto de las variables cuantitativas CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA
+### Tomamoe en cuenta solo el Colesterol en esta seccion 
+```{r}
+# Todas las variables cuantitativas
+numSummary(Dataset[,c("Cholesterol", "Betadiet","Retdiet", "Betaplasma","Retplasma"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+```
+Observando los datos de la variable Colesterol se puede decir que la media es de 255.7057, con una desviacion tipica de 159.1196, rango en (37.7,1153). Tambien obtenemos un valor de skewness positivo, esto indica que la distribucion tiene una asimetria positiva. El 50% de los valores de colesterol en las personas supera el 211.7.
+
+
+## Graficas de histograma y box plot de la variable Colesterol: 
+```{r}
+# Histogram with density plot
+ggplot(Dataset, aes(x=Cholesterol)) + 
+ geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
+ geom_density(alpha=.3, fill="#FF6666")
+
+# Basic box plot
+ggplot(Dataset, aes(x=Cholesterol)) + 
+  geom_boxplot()
+
+# boxplot
+boxplot(Dataset$Cholesterol)
+
+```
+Con la Grafica se puede confirmar el comportamiento *asimetrico positivo esperado.*  Tambien al ver los box plots no parece tener seguir una distribucion normal.  Por lo que antes de buscar intervalos de confianza y demas datos primero se validara la normalidad.
+
+
+
+# Comprobacion de normalidad de los datos con distintas pruebas estadisticas
+
+## Contraste de  Hipotesis
+### H0: La distribucion de la variable aleatoria es una distribucion normal
+### H1: La distribucion de la variable aleatoria es distinta a una distribucion normal
+
+## Aplicamos algunos test de normalidad como: Shapiro,Anderson-Darling,Cramer
+
+```{r}
+normalityTest(~Cholesterol, test="shapiro.test", data=Dataset) # Shapiro
+normalityTest(~Cholesterol, test="ad.test", data=Dataset)   # Anderson-Darling
+normalityTest(~Cholesterol, test="lillie.test", data=Dataset) 
+normalityTest(~Cholesterol, test="cvm.test", data=Dataset)  # Cramer
+normalityTest(~Cholesterol, test="pearson.test", data=Dataset)
+
+
+
+# lillie.test(Dataset$Cholesterol)
+with(Dataset, qqPlot(Cholesterol, dist="norm", id=list(method="y", n=2, labels=rownames(Cholesterol))))
+
+```
+El valor arrojado por las pruebas indican que p-value < 2.2e-16 y en el mejor de los casos p-value = 7.37e-10(Cramer)  por lo que podemos decir que se cumple la hipotesis H1 Y La distribucion de la variable aleatoria Colesterol es distinta a una distribucion normal. Al observar la grafica q-plot se nota que los valores sobre salen en gran parte de los limites. 
+
+
+# Dudas:
+1. Como la distribución que obtenemos no es normal, no se puede calcular intervalos de confianza?
+2. Debo buscar a que distribución pertenece?
+```{r}
+# Intervalo de confianza IT que se basa en la distribu T
+with(Dataset, t.test(Cholesterol,alternative = "two.sided", mu=0.0, con.level=.95))
+```
+
+
+
+## Analisis conjunto de las variables cuantitativa CHOLESTEROl agrupada por genero
+```{r}
+# num(Cholesterol),
+Dataset %>%
+  group_by(Género) %>%
+  summarise( num=n(), media = mean(Cholesterol), mediana=median(Cholesterol), min=min(Cholesterol),max= max(Cholesterol))
+
+
+
+
+  
+```
+
+# install.packages("nleqslv")
+```{r}
+# WEIBULL
+# Metodo de los Momentos
+rm(list=ls()) # Borrar objetos de memoria
+Alpha=2; Beta=3 # Valor exacto de parametros
+num=1000 # Numero datos a generar
+# Funcion genera vector con num datos Weibull
+VectorDatosW<-function(Alpha,Beta,num){
+VectorUnif<-runif(num,0,1)
+
+WEIB<- ((-Beta)*log(1-VectorUnif))^(1/Alpha)}
+
+# Vector generado de datos Weibull
+VData<-VectorDatosW(Alpha,Beta,num)
+
+ 
+
+# CONTINUACION: Metodo de los Momentos
+library(nleqslv) # Resolver sistema ecuaciones con funcion nleqslv()
+# Momentos muestrales
+M1<-mean(VData); M2<-mean(VData^2)
+# Funcion con el sistema de ecuaciones
+SistemaM <- function(x) {
+y <- numeric(2)
+y[1] <- x[2]^(1/x[1])*(1/x[1])*gamma(1/x[1])-M1
+y[2] <- x[2]^(2/x[1])*(2/x[1])*gamma(2/x[1])-M2
+return(y) }
+
+# Resolver el sistema
+xstart <- c(0.1,0.1) 
+#xstart <- c(1,1) # Punto de inicio2 para resolver el sistema, a veces cambiar el punto de inicio 
+help(nleqslv)
+SolSistem<-nleqslv(xstart, SistemaM, jacobian=TRUE)
+# Estimaciones metodo de los momentos:
+alphaM<-SolSistem$x[1]; alphaM
+betaM<-SolSistem$x[2]; betaM
+
+```
+```{r}
+#MOMENTOS DE MAXIMA VEROSIMILITUD
+alpha<- alphaM
+beta<- betaM
+# Funcion de log-verosimilitud:
+LogLike <- function(param){alpha <- param[1];beta <- param[2]
+LL<- sum(log(alpha)-log(beta)+(alpha-1)*log(VData)-(1/beta)*VData^(alpha))
+return(LL)}
+
+# Gradiente (primeras derivadas)
+Gradiente<-function(param){alpha <- param[1]; beta <- param[2]
+Grad1<-sum((1/alpha)+log(VData)-(1/beta)*(log(VData)*VData^(alpha)))
+Grad2<-sum((-1/beta)+(1/beta^2)*VData^(alpha))
+Gradi<-c(Grad1,Grad2)}
+
+
+
+
+
+#=====================================
+Inicio<-c(alpha,beta) # Punto inicio para resolver sistema10
+# Resolver sistema ecuaciones normales con nleqslv()
+
+SolSistema<-nleqslv(Inicio, fn=Gradiente)
+# Soluciones del sistema
+SolSistema$x[1]; alphaMV<-SolSistema$x[1]
+SolSistema$x[2]; betaMV<-SolSistema$x[2]
+LogLike(c(alphaMV,betaMV)) # Valor de Log-likelihood en el optimo
+
+
+# Chequear hessiano es definido negativo
+# Componentes del hessiano (evaluado en los datos y con las estimaciones MV)
+A11<-(-1)*(num/alphaMV^2)-(1/betaMV)*sum(VData^alphaMV*(log(VData))^2)
+A22<-(num/betaMV^2)-(2/betaMV^3)*sum(VData^alphaMV)
+A12<-(1/betaMV^2)*sum((VData^alphaMV)*log(VData))
+Determ<-A11%*%A22-A12%*%A12
+A11 # Primer menor: ha de ser negativo")
+Determ # Segundo menor: ha de ser postivo:")
+
+
+# 32 CONTINUACION: Estimaciones MV resolviendo el Problema de Optimizacion
+# Resolver problema de optimizacion con constrOptim()
+
+# Algoritmo de Nelder-Mead
+SolNelderMead<-constrOptim(Inicio,LogLike,Gradiente,method="Nelder-Mead", ui=rbind(c(1,0), c(0,1)), ci=c(0,0), control=list(fnscale=-1),hessian=TRUE)
+# Estimaciones de parametros
+SolNelderMead$par[1]; SolNelderMead$par[2]
+SolNelderMead$value # Valor de log-verosimilitud
+SolNelderMead$hessian # Proporciona la matriz hessiana
+
+
+# Algoritmo BFGS
+SolBFGS<-constrOptim(Inicio,LogLike,Gradiente,method="BFGS", ui=rbind(c(1,0), c(0,1)), ci=c(0,0), control=list(fnscale=-1),hessian=TRUE)
+# Estimaciones de parametros
+SolBFGS$par[1];SolBFGS$par[2]
+SolBFGS$value # Valor de log-verosimilitud
+H=SolBFGS$hessian # Proporciona la matriz hessiana
+det(H)
+# Comprobamos la matriz hessiana con las soluciones BFGS es definida negativa
+library(matrixcalc)
+is.negative.definite(H)
+
+```
+

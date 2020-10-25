@@ -1,0 +1,91 @@
+
+UniformSamples <- as.data.frame(matrix(runif(100*12, min=0, max=1), 
+  ncol=12))
+rownames(UniformSamples) <- paste("sample", 1:100, sep="")
+colnames(UniformSamples) <- paste("obs", 1:12, sep="")
+UniformSamples <- within(UniformSamples, {
+  sum <- rowSums(UniformSamples[,1:12])
+})
+with(UniformSamples, Hist(sum, scale="frequency", breaks="Sturges", 
+  col="darkgray"))
+
+normalityTest(~sum, test="shapiro.test", data=UniformSamples)
+normalityTest(~sum, test="ad.test", data=UniformSamples)
+with(UniformSamples, qqPlot(sum, dist="norm", id=list(method="y", n=2, labels=rownames(UniformSamples))))
+with(UniformSamples, qqPlot(sum, dist="exp", id=list(method="y", n=2, labels=rownames(UniformSamples))))
+
+
+PoissonSamples <- as.data.frame(matrix(rpois(200*20, lambda=1), ncol=20))
+rownames(PoissonSamples) <- paste("sample", 1:200, sep="")
+colnames(PoissonSamples) <- paste("obs", 1:20, sep="")
+PoissonSamples <- within(PoissonSamples, {
+  sum <- rowSums(PoissonSamples[,1:20])
+})
+PoissonSamples <- as.data.frame(matrix(rpois(200*20, lambda=1), ncol=20))
+rownames(PoissonSamples) <- paste("sample", 1:200, sep="")
+colnames(PoissonSamples) <- paste("obs", 1:20, sep="")
+PoissonSamples <- within(PoissonSamples, {
+  sum <- rowSums(PoissonSamples[,1:20])
+})
+with(PoissonSamples, Hist(sum, scale="frequency", breaks="Sturges", col="darkgray"))
+with(PoissonSamples, Hist(sum, scale="frequency", breaks="Sturges", col="darkgray"))
+
+
+
+PoissonSamples2 <- as.data.frame(matrix(rpois(100*100, lambda=0.01), ncol=100))
+rownames(PoissonSamples2) <- paste("sample", 1:100, sep="")
+colnames(PoissonSamples2) <- paste("obs", 1:100, sep="")
+PoissonSamples2 <- within(PoissonSamples2, {
+  sum <- rowSums(PoissonSamples2[,1:100])
+})
+with(PoissonSamples2, Hist(sum, scale="frequency", breaks="Sturges", col="darkgray"))
+library(abind, pos=16)
+library(e1071, pos=17)
+numSummary(UniformSamples[,"obs1", drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles"), quantiles=c(0,
+  .25,.5,.75,1))
+numSummary(UniformSamples[,"sum", drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles"), quantiles=c(0,
+  .25,.5,.75,1))
+
+normalityTest(~sum, test="shapiro.test", data=PoissonSamples)
+PoissonSamples30 <- as.data.frame(matrix(rpois(100*30, lambda=1), ncol=30))
+rownames(PoissonSamples30) <- paste("sample", 1:100, sep="")
+colnames(PoissonSamples30) <- paste("obs", 1:30, sep="")
+PoissonSamples30 <- within(PoissonSamples30, {
+  sum <- rowSums(PoissonSamples30[,1:30])
+})
+normalityTest(~sum, test="shapiro.test", data=PoissonSamples30)
+with(PoissonSamples30, Hist(sum, scale="frequency", breaks="Sturges", col="darkgray"))
+with(PoissonSamples30, Hist(sum, scale="frequency", breaks="Sturges", col="darkgray"))
+
+
+load("C:/Users/smmanrrique/3D Objects/unizar/ADD Análisis avanzado de datos/Datos Clases Inferencia (Repaso) y ANOVA-20200926/Datos2poblaciones.RData")
+
+with(Datos, Hist(TiempoAlg1, scale="frequency", breaks="Sturges", col="darkgray"))
+with(Datos, Hist(TiempoAlg2, scale="frequency", breaks="Sturges", col="darkgray"))
+numSummary(Datos[,c("TiempoAlg1", "TiempoAlg2"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles"), 
+  quantiles=c(0,.25,.5,.75,1))
+
+
+Boxplot( ~ TiempoAlg1, data=Datos, id=list(method="y"))
+
+
+Boxplot( ~ TiempoAlg2, data=Datos, id=list(method="y"))
+
+
+StackedData <- stack(Datos[, c("TiempoAlg1","TiempoAlg2")])
+names(StackedData) <- c("variable", "factor")
+
+Boxplot( ~ variable, data=StackedData, id=list(method="y"))
+Boxplot(variable~factor, data=StackedData, id=list(method="y"))
+normalityTest(variable ~ factor, test="shapiro.test", data=StackedData)
+
+
+Tapply(variable ~ factor, var, na.action=na.omit, data=StackedData) # variances by group
+var.test(variable ~ factor, alternative='two.sided', conf.level=.95, data=StackedData)
+
+
+t.test(variable~factor, alternative='two.sided', conf.level=.95, var.equal=FALSE, data=StackedData)
+
+
+t.test(variable~factor, alternative='two.sided', conf.level=.95, var.equal=TRUE, data=StackedData)
+
