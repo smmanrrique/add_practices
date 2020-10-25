@@ -1,0 +1,165 @@
+---
+title: "tarea1_generacion_variables_aleatoria"
+author: "Shamuel Manrrique"
+date: "10/25/2020"
+output: html_document
+---
+
+Aplicar el método de la transformación inversa y/o el de aceptación rechazo para construir una función en R que genere datos de la siguientes distribuciones:
+
+5. Distribucion log exponencial-geometrica (Jodra y Jimenez, 2020) de parametros α > 0 y β > 0 con funcion de densidad: 
+´
+f(x; α, β) = α(1 + β)x^α−1/(1 + β x^α)^2, 0 < x < 1
+
+# Metodo de transformacion Inversa
+Buscamos la integral de la funcion para obtener la funcion de distribucion acumulado
+>f(x; α, β) = (1 + β) x^(α - 1))/(1 + β x^α)^2 , 0 < x < 1, α > 0, β > 0
+
+## Integramos la funcion usando WolframAlpha
+>integral(α (1 + β) x^(α - 1))/(1 + β x^α)^2 dx = -(β + 1)/(β + β^2 x^α) + constant
+
+## La funcion de distribucion acumulada es:
+>F(x; α, β) = 1 -(β + 1)/(β + β^2 x^α)   , 0 < x < 1
+
+## Preguntar si es necesario ponerle el uno en la practica esta pero no se justificarlo.
+
+## Buscamos la funcion inversa de la funcion de distribucion acumulada
+>inverse y = 1 -(β + 1)/(β + β^2 x^α) , 0 < x < 1, α > 0, β > 0
+((β (-x) - 1)/(β^2 (x - 1)))^(1/α)
+
+#La funcion inversa de F o funcion cuantil es:
+>F(u; α, β)=((β (-u) - 1)/(β^2 (u - 1)))^(1/α),  0 < u < 1
+
+
+
+# Importar librerias necesarias
+```{r setup, include=FALSE}
+library("ggplot2")
+library("dplyr")          # load
+library("RcmdrMisc")
+```
+
+
+```{r}
+
+DatosJoJi <- function(α,β,n){
+  
+# Generar "n" datos uniforme (0,1):
+VectorUnif<-runif(n,0,1)
+
+# Generar datos de la distribucion Jodra y Jimenez mediante la funcion cuantil:
+JoJi <- ((β*(-VectorUnif) - 1)/(β^2*(VectorUnif - 1)))^(1/α)
+
+return(JoJi)
+
+}
+
+
+α=3; 
+β=2;
+n=1000;
+
+
+#x<-DatosJoJi(α,β,n)
+
+Hist(DatosJoJi(α,β,n), scale="frequency", breaks="Sturges", col="darkgray")
+
+
+# Funcion de densidad:
+PdfX<- function(x){ return(n*((α*(1 + β)*x^(α-1))/(1 + β*x^α)^2)) }
+curve(PdfX(x), from=0, to=15, lwd=2, cex = 1.1, col="red",add=TRUE)
+
+
+```
+
+>inverse y = -(β + 1)/(β + β^2 x^α) , 0 < x < 1, α > 0, β > 0
+(-(β + β x + 1)/(β^2 x))^(1/α)
+
+>F(u; α, β)=(-(β + β u + 1)/(β^2 u))^(1/α),  0 < u < 1
+
+```{r}
+
+DatosJoJi <- function(α,β,n){
+  
+# Generar "m" datos uniforme (0,1):
+VectorUnif<-runif(n,0,1)
+
+# Generar datos de la distribucion Jodra y Jimenez mediante la funcion cuantil:
+JoJi <- (-(β + β*VectorUnif + 1)/(β^2*VectorUnif))^(1/α)
+
+return(JoJi)
+
+}
+
+x<-DatosJoJi(1,3,100)
+
+Hist(x, scale="frequency", breaks="Sturges", col="darkgray")
+
+# Funcion de densidad:
+α=3; 
+β=2;
+n=100;
+PdfX<- function(x){ n*((α*(1 + β)*x^(α-1))/(1 + β*x^α)^2) }
+curve(PdfX(x), from=0, to=15, lwd=2, cex = 1.1, col="red",add=TRUE)
+```
+
+
+
+# Tarea 2: la lección Métodos de Estimación, sección 1.3. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Se decidio usar el metodo de la transformacion inversa por lo que primero se debe calcular la inversa de la funcion(si es invertible y la tiene), para esto se uso la pagina en linea de WolframAlpha con el siguiente input
+
+>inverse function f(x, α, β) = (α (1 + β)x^(α - 1))/(1 + β x^α)^2, 0 < x < 1, α > 0, β > 0
+
+lo cual no arrojo como resultado que la funcion no tiene inversa. Por ende aplicaremos el metodo de aceptacion y rechazo.
+
+--Me arrojo esta inversa (tengo mis dudas)
+inverse function {f(x, α, β) = (x^(-1 + α) α (1 + β))/(1 + x^α β)^2, 0<{0, 0}, β>0}
+
+
+>inverse function (α (1 + β)x^(α - 1))/(1 + β x^α)^2
+
+
+
+# Metodo de aceptacion y rechazo
+permite generar una v.a. X cuando se conoce su funcion de densidad f pero no se dispone de expresion analıtica para la inversa.
+
+
+##Paso 0. Elegir una v.a. Y con densidad g y calcular c: c = maxxf(x)/g(x)
+.
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
