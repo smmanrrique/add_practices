@@ -6,27 +6,24 @@ date: "10/20/2020"
 output: html_document
 ---
 
-<!-- 
-Ejercicio propuesto 2
-En el fichero de datos Homicidios.RData se tiene la variable cuantitativa Homicidios que indica el número de homicidios al año en los distintos países del mundo.
-Además, se dispone de las variables cualitativas (factor) Region y Subregion. ´
-(i) Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones.
-(ii) Agrupando por regiones/subregiones de dos en dos, decidir si el número de homicidios dependen de las regiones/subregiones consideradas. -->
-
-
 # Ejercicio propuesto 2
-En el fichero de datos Homicidios.RData se tiene la variable cuantitativa Homicidios que indica el número de homicidios al año en las distintas regiones y subregiones de diferentes países del mundo.
- 
-# El fichero en formato RData se denomina BaseDatosPlasmaCompleta.RData.
- 
+En el fichero de datos Homicidios.RData se tiene la variable cuantitativa Homicidios que indica el número de homicidios al año en las distintas regiones y subregiones de diferentes países del mundo.Además, se dispone de las variables cualitativas (factor) Region y Subregion.
+
+1. Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones.
+
+2. Agrupando por regiones/subregiones de dos en dos, decidir si el número de homicidios dependen de las regiones/subregiones consideradas. 
+
+
 ## Import libraries
-```{r}
+```{r,  echo=FALSE}
+library("RcmdrMisc")
 library("ggplot2")
 library("dplyr")          # load
 library("lawstat")
+
 ```
  
-## Cargamos los datos que se encuentran en BaseDatosPlasmaCompleta.RData
+## Cargamos los datos que se encuentran en Homicidios.RData
 ```{r}
 load("~/add_practices/practice1/datasets/Homicidios.RData")
 ```
@@ -35,31 +32,27 @@ load("~/add_practices/practice1/datasets/Homicidios.RData")
 ```{r}
 summary(Dataset)
 ```
- Al obtener un resumen de los datos nos percatamos que poseemos 
  
-## 1. Estadıstica descriptiva 
+## 1. Estadistica descriptiva 
 Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones. 
  
-### Datos de Homicidios agrupando por regiones.
+## Region
+#### Datos de Homicidios agrupando por regiones.
 ```{r}
 # Homicidios por regiones
 numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Región, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
 
-
 Boxplot(Homicidios~Región, data=Dataset, id=list(method="y"))
-
 ```
 
-
-
-## Validamos que los datos siguen una distribucion Normal
+### Validamos que los datos siguen una distribucion Normal
 ```{r}
 # Histogram with density plot
 ggplot(data=Dataset , aes(x=Homicidios)) + 
  geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
  geom_density(alpha=.05, fill="#FF6666")
 
-# Prueba de normalidad por groupo
+# Prueba de normalidad por Región
 normalityTest(Homicidios~Región, test="shapiro.test", data=Dataset) # Shapiro
 normalityTest(Homicidios~Región, test="ad.test", data=Dataset)   # Anderson-Darling
 normalityTest(Homicidios~Región, test="lillie.test", data=Dataset) 
@@ -72,19 +65,16 @@ with(Dataset, qqPlot(Homicidios, dist="norm", id=list(method="y", n=2, labels=ro
 
 Los valores optenidos en cada uno de los p-valores indican que no poseemos una distribucion normal. por lo que para realizar las pruebas de varianza y media iguales se usaran otras heuristicas que no requieran normalidad.
 
-
-## Validamos si las dos varianzas son iguales o no 
+### Validamos si las dos varianzas son iguales o no 
 ```{r}
-
-# Test Levene para dos varianzas de distribuciones distintas a la normal
-leveneTest(Homicidios~Región, data=Dataset)
+# Test Levene para dos varianzas con distribuciones distintas a la normal
+# leveneTest(Homicidios~Región, data=Dataset)
 leveneTest(Homicidios~Región, data=Dataset, center=mean)
 
-levene.test(Dataset$Homicidios,Dataset$Región)
 ```
 Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que las varianzas son iguales Por lo que asumimos varianzas distintas.
 
-## Validamos si las dos medias son iguales o no 
+### Validamos si las dos medias son iguales o no 
 ```{r}
 #wilcox.test(Homicidios~Región, data = Dataset)
 #wilcox.test(Homicidios~Región, data = Dataset, subset = Región %in% c("África", "América"), paired = TRUE)
@@ -96,7 +86,44 @@ Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que
 
 
 ```
+---
+
+## Subregion
+#### Datos de Homicidios agrupando por regiones.
+```{r}
+# Homicidios por regiones
+numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Región, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+Boxplot(Homicidios~Subregión, data=Dataset, id=list(method="y"))
+```
+
+### Validamos que los datos siguen una distribucion Normal
+```{r, error=FALSE, include=FALSE}
+# Prueba de normalidad por Región
+#normalityTest(Homicidios~Subregión, test="shapiro.test", data=Dataset) # Shapiro
+# normalityTest(Homicidios~Subregión, test="ad.test", data=Dataset)   # Anderson-Darling
+normalityTest(Homicidios~Subregión, test="lillie.test", data=Dataset) 
+normalityTest(Homicidios~Subregión, test="cvm.test", data=Dataset)  # Cramer
+
+# qqPlot para la validacion de normalidad
+with(Dataset, qqPlot(Homicidios, dist="norm", id=list(method="y", n=2, labels=rownames(Homicidios))))
+ 
+```
+### Validamos si las dos varianzas son iguales o no 
+```{r}
+# Test Levene para dos varianzas con distribuciones distintas a la normal
+# leveneTest(Homicidios~Subregión, data=Dataset)
+leveneTest(Homicidios~Subregión, data=Dataset, center=mean)
+
+```
+Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que las varianzas son iguales Por lo que asumimos varianzas distintas.
+
+### Validamos si las dos medias son iguales o no 
+```{r}
+#wilcox.test(Homicidios~Subregión, data = Dataset)
+#wilcox.test(Homicidios~Subregión, data = Dataset, subset = Región %in% c("África", "América"), paired = TRUE)
+#wilcox.test(Homicidios~Subregión, data = Dataset)
+#wilcox.test(Homicidios~Subregión, data = Dataset, paired = TRUE)
 
 
-
-
+#wilcox.test(Dataset~Homicidios, Dataset~Región, alternative = "g")

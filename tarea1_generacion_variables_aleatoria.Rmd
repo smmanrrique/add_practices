@@ -41,7 +41,7 @@ Buscamos la integral de la función de densidad para obtener la funcion de distr
 5. Programa en R para crear muestras aleatoria siguiendo la Distribución log exponencial-geométrica
 
 ### Importar librerías necesarias
-```{r setup, include=FALSE}
+```{r setup, error=TRUE, include=TRUE}
 library("ggplot2")
 library("dplyr")          # load
 library("RcmdrMisc")
