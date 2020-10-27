@@ -44,6 +44,9 @@ numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Región, stat
 
 Boxplot(Homicidios~Región, data=Dataset, id=list(method="y"))
 ```
+Observando los datos de la variable Colesterol se puede decir que la media es de 255.7057, con una desviación típica de 159.1196, rango en (37.7,1153). También obtenemos un valor de skewness positivo, esto indica que la distribución tiene una asimetría positiva. El 50% de los valores de colesterol en las personas supera el 211.7. La muestra es de tamaño n = 363.
+
+
 
 ### Validamos que los datos siguen una distribucion Normal
 ```{r}

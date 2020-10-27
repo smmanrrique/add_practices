@@ -5,27 +5,13 @@ NIP: "802400"
 date: "10/20/2020"
 output: html_document
 ---
- 
-# Ejercicio propuesto 1
-# En el fichero de datos Base Datos Plasma Retinol.tex se tienen las variables cuantitativas CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y
-# RETPLASMA. En este fichero de texto se comentan esas variables. Ademas, se
-# dispone de la variable cualitativa (factor) GENERO que agrupa los datos en dos
-# niveles: Hombre y Mujer.
-# El fichero en formato RData se denomina BaseDatosPlasmaCompleta.RData.
-# (i) Realizar una estad´ıstica descriptiva para cada una de las variables cuantitativas considerando, 
-# en primer lugar, los datos conjuntamente (sin distinguir por genero) y, 
-# en segundo lugar, agrupando por la variable GENERO.
-# (ii) Determinar si influye el factor GENERO en cada una de las variables cuantitativas: CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA.
 
 # Ejercicio propuesto 1
-En el fichero de datos Base Datos Plasma Retinol.tex se tienen las variables cuantitativas CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA. En este fichero de texto se comentan esas variables. Además, se dispone de la variable cualitativa (factor) GÉNERO que agrupa los datos en dos ´
-niveles: Hombre y Mujer.
- 
-# El fichero en formato RData se denomina BaseDatosPlasmaCompleta.RData.
+En el fichero de datos Base Datos Plasma Retinol.tex se tienen las variables cuantitativas CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA. En este fichero de texto se comentan esas variables. Además, se dispone de la variable cualitativa (factor) GÉNERO que agrupa los datos en dos niveles: Hombre y Mujer.
  
 ## Import libraries
 ```{r}
-library("Rcmdr")
+library("RcmdrMisc")
 library("ggplot2")
 library("dplyr")          # load
 ```
@@ -40,18 +26,16 @@ load("~/add_practices/practice1/datasets/BaseDatosPlasmaCompleta.RData")
 summary(Dataset)
 ```
  
-## 1. Estadıstica descriptiva 
-Para cada una de las variables cuantitativas considerando, en primer lugar, los datos conjuntamente (sin distinguir por género) y, en segundo lugar, agrupando por la variable GÉNERO. 
- 
-Analisis conjunto de las variables cuantitativas CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA Se tomara en cuenta solo una varianle en este caso el Colesterol como se menciono en clase. 
- 
-### Datos conjuntamente sin distinguir por género
+## Estadística descriptiva 
+Para la variable cuantitativa CHOLESTEROL se considera, en primer lugar, los datos conjuntamente (sin distinguir por género) y, en segundo lugar, agrupando por la variable GÉNERO. 
+
+## Datos sin agrupar por GÉNERO
+### Analizamos los datos sin agrupación por genero
 ```{r}
 # Todas las variables cuantitativas
-numSummary(Dataset[,c("Cholesterol", "Betadiet","Retdiet", "Betaplasma","Retplasma"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
- 
+numSummary(Dataset[,c("Cholesterol"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
 ```
-Observando los datos de la variable Colesterol se puede decir que la media es de 255.7057, con una desviacion típica de 159.1196, rango en (37.7,1153). También obtenemos un valor de skewness positivo, esto indica que la distribución tiene una asimetría positiva. El 50% de los valores de colesterol en las personas supera el 211.7.
+Observando los datos de la variable Colesterol se puede decir que la media es de 255.7057, con una desviación típica de 159.1196, rango en (37.7,1153). También obtenemos un valor de skewness positivo, esto indica que la distribución tiene una asimetría positiva. El 50% de los valores de colesterol en las personas supera el 211.7. La muestra es de tamaño n = 363.
  
 ### Gráficas de histograma y box plot de la variable Colesterol: 
 ```{r}
@@ -66,18 +50,19 @@ ggplot(Dataset, aes(x=Cholesterol)) +
  
 # boxplot
 boxplot(Dataset$Cholesterol)
- 
+
 ```
-Con la Gráfica se puede confirmar el comportamiento *asimétrico positivo esperado.*  También al ver los box plots no parece tener seguir una distribución normal.  Por lo que antes de buscar intervalos de confianza y demás datos primero se validará la normalidad.
+Con la Gráfica se puede confirmar el comportamiento *asimétrico positivo esperado. *  También al ver los diagramas de cajas no parece tener seguir una distribución normal por la desproporción de sus cuartiles.  Por lo que antes de buscar intervalos de confianza y demás datos primero se validará la normalidad.
  
 ### Comprobación de normalidad de los datos con distintas pruebas estadísticas
  
-Contraste de  Hipótesis:
-1. H0: La distribución de la variable aleatoria es una distribución normal
-2. H1: La distribución de la variable aleatoria es distinta a una distribución normal
+Contraste de Hipótesis:
+
+1. H0: La distribución de la variable aleatoria sigue una distribución normal
+
+2. H1: La distribución de la variable aleatoria no sigue una distribución normal
  
 ### Aplicamos algunos test de normalidad como: Shapiro,Anderson-Darling,Cramer
- 
 ```{r}
 normalityTest(~Cholesterol, test="shapiro.test", data=Dataset) # Shapiro
 normalityTest(~Cholesterol, test="ad.test", data=Dataset)   # Anderson-Darling
@@ -86,106 +71,54 @@ normalityTest(~Cholesterol, test="cvm.test", data=Dataset)  # Cramer
 normalityTest(~Cholesterol, test="pearson.test", data=Dataset)
 
 
-# lillie.test(Dataset$Cholesterol)
+# QQPlot
 with(Dataset, qqPlot(Cholesterol, dist="norm", id=list(method="y", n=2, labels=rownames(Cholesterol))))
  
 ```
-El valor arrojado por las pruebas indican que p-value < 2.2e-16 y en el mejor de los casos p-value = 7.37e-10(Cramer)  por lo que podemos decir que se cumple la hipótesis H1 Y La distribución de la variable aleatoria Colesterol es distinta a una distribución normal. Al observar la gráfica qq-plot se nota que los valores sobresalen en gran parte de los límites. 
- 
-# Dudas:
-1. Como la distribución que obtenemos no es normal, por ende no se puede calcular intervalos de confianza?
-2. Debo buscar a qué distribución pertenece?
- 
+los valores arrojados por las pruebas indican que p-value < 2.2e-16 y en el mejor de los casos p-value = 7.37e-10(Cramer) por lo que rechazamos la hipótesis nula y podemos asumir que la función de distribución de la variable aleatoria Colesterol es distinta a la normal. De igual forma se puede corroborar con la gráfica qq-plot se nota que los valores sobresalen en gran parte de los límites, lo que es un indicio de que no hay normalidad. 
+---
+## Agrupar por el GÉNERO
 ### Datos agrupando por la variable GÉNERO
 Análisis conjunto de las variables cuantitativa CHOLESTEROl agrupada por género
 ```{r}
-Dataset %>%
-  group_by(Género) %>%
-  summarise( num=n(), media = mean(Cholesterol), mediana=median(Cholesterol), min=min(Cholesterol),max= max(Cholesterol), .groups = 'drop')
- 
+# Resumen estadístico de la variable colesterol por genero
+numSummary(Dataset[,c("Cholesterol"), drop=FALSE], groups = Dataset$Género, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+# Grafica de diagrama de caja de Cholesterol~Género
+Boxplot(Cholesterol~Género, data=Dataset, id=list(method="y"))
 ```
-Al generar un resumen con los datos agrupados apreciamos que en cuanto al género 1 tiene una media de 328.1238 con valor mínimo 77.5 y máximo 747.5 y un total de 42 muestras que equivale a un aproximado de 13.333%. Por otro lado el género 2  tiene una media de 244.5645 con valor mínimo 37.7 y máximo 1153.0 y un porcentaje de 86.666% lo que lo hace el conjunto con mayor número de muestras. 
+Al generar un resumen con los datos agrupados por genero se aprecia que el género 1 cuenta con un total Las 42 muestras de este sexo equivalen a un aproximado del 13.333% de la muestra total, estos datos tienen una media de 328.1238 con valor mínimo 77.5 y máximo 747.5. También se puede notar que el valor de skewness está en un rango aceptable entre cero y uno. Por otro lado, el género 2 tiene un total de 273 que equivale a un 86.666% de la muestra total con una media de 244.5645 con valor mínimo 37.7 y máximo 1153.0. El valor de skewness es bastante elevado(mayor a dos) indica que la distribución es asimétrica positiva.
  
-### Gráficas de histograma y box plot de la variable Colesterol: 
-#### GÉNERO 1
+### Validamos que los datos siguen una distribución Normal
 ```{r}
-women <-filter(Dataset, Género==1)
- 
-# Todas las variables cuantitativas
-numSummary(women[,c("Cholesterol", "Betadiet","Retdiet", "Betaplasma","Retplasma"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
- 
-# Histogram with density plot
-ggplot(women, aes(x=Cholesterol)) + 
- geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
- geom_density(alpha=.3, fill="#FF6666")
- 
-# Basic box plot
-ggplot(women, aes(x=Cholesterol)) + 
-  geom_boxplot()
- 
-# boxplot
-boxplot(women$Cholesterol)
- 
-# Test de normalidad
-normalityTest(~Cholesterol, test="shapiro.test", data=women) # Shapiro
-normalityTest(~Cholesterol, test="ad.test", data=women)  # Anderson-Darling
-normalityTest(~Cholesterol, test="lillie.test", data=women) 
-normalityTest(~Cholesterol, test="cvm.test", data=women)  # Cramer
-normalityTest(~Cholesterol, test="pearson.test", data=women)
- 
-# lillie.test(Dataset$Cholesterol)
-with(women, qqPlot(Cholesterol, dist="norm", id=list(method="y", n=2, labels=rownames(Cholesterol))))
- 
-# Calculamos intervalos de confianza
-with(women, t.test(Cholesterol,alternative = "two.sided", mu=0.0, con.level=.95))
+# Prueba de normalidad por Región
+normalityTest(Cholesterol~Género, test="shapiro.test", data=Dataset) # Shapiro
+normalityTest(Cholesterol~Género, test="ad.test", data=Dataset)   # Anderson-Darling
+normalityTest(Cholesterol~Género, test="lillie.test", data=Dataset) 
+normalityTest(Cholesterol~Género, test="cvm.test", data=Dataset)  # Cramer
  
 ```
-Al filtrar los datos por género igual a 1 y aplicarle análisis estadístico arroja como resultado que el género 1 sigue una distribución normal con un intervalo de confianza (282.8036, 373.4440) y una media 328.1238. La aplicación de los test de normalidad nos arrojan un valor aceptación mayor a 0.22. La variación de los datos es bastante alta igual a  145.4333
+Al realizar las pruebas de normalidad agrupando los datos por Género se obtuvo que el género uno sigue una distribución normal con un p-calor mayor a 0.05. Sin embargo, el género dos no sigue una distribución normal. Por lo que se tendrán que usar otros métodos que no requieran la normalidad de los datos para realizar comparaciones de media y varianza de estos dos conjuntos.
 
+## 2. Determinar si influye el factor GÉNERO en la variable cuantitativa: CHOLESTEROL.
+Para determinar si el factor genero influye en la variable CHOLESTEROL validaremos que ambos grupos tienen varianza y media igual, teniendo en cuenta que se deben usar validaciones como Levene (comprobar igualda de varinaza) y Wilcox (comprobar igualdad de media) dado que una de cuando una de las muestras no sigue una distribución normal. 
 
-#### MEN
+### Validamos si las dos varianzas son iguales o no 
 ```{r}
- 
-men <- filter(Dataset, Género==2)
-# Histogram with density plot
-ggplot(men, aes(x=Cholesterol)) + 
- geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
- geom_density(alpha=.3, fill="#FF6666")
- 
-# Basic box plot
-ggplot(men, aes(x=Cholesterol)) + 
-  geom_boxplot()
- 
-# boxplot
-boxplot(men$Cholesterol)
- 
-# Test de Normalidad
-normalityTest(~Cholesterol, test="shapiro.test", data=men) # Shapiro
-normalityTest(~Cholesterol, test="ad.test", data=men)   # Anderson-Darling
-normalityTest(~Cholesterol, test="lillie.test", data=men) 
-normalityTest(~Cholesterol, test="cvm.test", data=men)  # Cramer
-normalityTest(~Cholesterol, test="pearson.test", data=men)
- 
-# lillie.test(Dataset$Cholesterol)
-with(men, qqPlot(Cholesterol, dist="norm", id=list(method="y", n=2, labels=rownames(Cholesterol))))
+# Test Levene para dos varianzas con distribuciones distintas a la normal
+leveneTest(Cholesterol~Género, data=Dataset)
+leveneTest(Cholesterol~Género, data=Dataset, center=mean)
+
+# Test Fligner-Killeen para dos varianzas con distribuciones distintas a la normal
+fligner.test(Cholesterol~Género, data=Dataset)
 ```
-Al filtrar los datos por género igual a 2 y aplicarle análisis estadístico arroja como resultado que el género 2 nosigue una distribución normal. Los datos poseen una media de 244.5645.
- 
- 
-# Dudas:
-tengo un conjunto de datos que no sigue una distribución normal, pero si los analizo agrupándolos por género veo que los de un género se distribuyen de forma normal y los del otro no.
-ese fenómeno tiene algún nombre ?
-me afecta en algo lo que yo había determinado al inicio
-en cuanto a la distribución de los datos de forma completa(sin agrupar)
- 
-## 2. Determinar si influye el factor GÉNERO 
-En cada una de las variables cuantitativas: CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA.
- 
-Para determinar si el factor genero influye en la variable CHOLESTEROL podemos ver si este conjunto de datos son iguales. 
+El valor obtenido por el p-value es mayor a 0.05 lo que significa que aceptamos la hipótesis nula y asumimos que no hay una diferencia significativa entre las varianzas del colesterol agrupada por género. Sin embargo el resultado del p-value obtenido con Fligner-Killeen apenas es mayor a 0.05(que se hace en ese caso?)
 
+### Validamos si las dos medias son iguales o no 
+```{r}
+wilcox.test(Cholesterol~Género, data = Dataset)
+#wilcox.test(Cholesterol~Género, data = Dataset, paired = TRUE)
 
-
-
-
-
-
+#wilcox.test(Dataset~Homicidios, Dataset~Región, alternative = "g")
+```
+El valor del p-value es menor a 0.05 por lo que rechazo la hipótesis nula y determino que el factor genero influye en el colesterol  
