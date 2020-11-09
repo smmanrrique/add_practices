@@ -1,0 +1,86 @@
+---
+title: "clase4: Programacion de lenguaje R"
+author: "Shamuel Manrrique"
+date: "10/27/2020"
+output: html_document
+---
+
+## Importar librerías necesarias
+```{r setup, error=FALSE, include=FALSE}
+# install.packages("nleqslv")
+library(nleqslv) # Resolver sistema ecuaciones con funcion nleqslv()
+```
+
+
+
+
+```{r}
+# Algoritmo EM: Muestra exponencial censurada.
+numsc<-80 # Numero datos observados
+numcc<-20 # Numero datos censurados
+numcompleto<-(numsc+numcc) # Tama~no muestral completo
+lambda<-1/2 # (Exponencial de media 2)
+
+# Inicializar a 0 los vectores de datos
+Y<-rep(0,numcompleto); YSincensura<-rep(0,numsc); YConcensura<-rep(0,numcc)
+
+# Generar numcompleto de datos sin censura con el fin de eliminar despues
+# numcc datos y comparar el resultado censurado con la muestra sin censurar
+Y<- c(rexp(numcompleto,lambda)); Y<-sort(Y)
+mean(Y)
+
+# Vector solo con datos observados:
+for (j in 1:numsc)YSincensura[j]<-Y[j]
+YSincensura
+
+# Vector solo con datos no observados:
+YConcensura<-rep(Y[numsc],numcc)
+YConcensura
+
+# Redefinir Y como muestra de datos observados y no observados:
+Y<-c(YSincensura,YConcensura)
+mean(Y) # media de los datos observados (informacion disponible)
+
+```
+
+
+
+```{r}
+
+#---------------------------------
+# CONTINUACION Algoritmo EM: Muestra exponencial censurada.
+# EM algorithm
+iter <- 0 # numero de iteracion
+preci = 1/10^8 # umbral en diferencia de log-verosimilitudes
+dif <- 1 # valor diferencia de log-verosimilitudes
+# old.parameter<-mean(Y) # Valor inicio del parametro
+
+
+# Modifico el vector Y 
+old.parameter<-mean(YConcensura) # Valor inicio del parametro
+
+
+# Valor inicial de la log-verosimilitud al inicio de la iteracion
+LogLikelihood.old<- (-numsc*log(old.parameter))-(1/old.parameter)*sum(Y)
+while(dif > preci){
+  cat("-----------------Iteracion:",iter+1,"-----------------\n")
+  cat("Valor inicio del parametro", old.parameter,"\n")
+  cat("Valor inicio de log-verosimilitud:", LogLikelihood.old,"\n")
+  new.parameter<-(sum(Y)+(numcompleto-numsc)*(old.parameter))/numcompleto
+  LogLikelihood.new<- (-numsc*log(new.parameter))-(1/new.parameter)*sum(Y)
+  dif<-abs(LogLikelihood.new-LogLikelihood.old)
+  LogLikelihood.old<-LogLikelihood.new
+  old.parameter<- new.parameter
+  iter <- iter + 1
+  
+  if (dif < preci ){
+    cat(" Estimacion final EM del parametro", old.parameter,"\n")
+    cat(" Valor final de log-verosimilitud:", LogLikelihood.old,"\n")
+  } 
+}
+# Estimacion ML exacta sin usar el algoritmo EM:
+cat("Estimacion final del parametro (desarrollo analitico):",sum(Y)/numsc,"\n")
+
+
+```
+

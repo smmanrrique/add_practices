@@ -1,0 +1,80 @@
+---
+title: "clase3_estimacion_puntual"
+author: "Shamuel Manrrique"
+date: "10/27/2020"
+output: html_document
+---
+
+## Importar librerías necesarias
+```{r setup, error=FALSE, include=FALSE}
+# install.packages("nleqslv")
+library(nleqslv) # Resolver sistema ecuaciones con funcion nleqslv()
+```
+
+## 
+```{r}
+
+# Chequear hessiano es definido negativo
+# Componentes del hessiano (evaluado en los datos y con las estimaciones MV)
+A11<-(-1)*(num/alphaMV^2)-(1/betaMV)*sum(VData^alphaMV*(log(VData))^2)
+A22<-(num/betaMV^2)-(2/betaMV^3)*sum(VData^alphaMV)
+A12<-(1/betaMV^2)*sum((VData^alphaMV)*log(VData))
+Determ<-A11%*%A22-A12%*%A12
+A11 # Primer menor: ha de ser negativo")
+Determ # Segundo menor: ha de ser postivo:")
+
+# Algoritmo BFGS
+SolBFGS<-constrOptim(Inicio,LogLike,Gradiente,method="BFGS", ui=rbind(c(1,0), c(0,1)), ci=c(0,0), control=list(fnscale=-1),hessian=TRUE)
+# Estimaciones de parametros
+SolBFGS$par[1];SolBFGS$par[2]
+SolBFGS$value # Valor de log-verosimilitud
+H=SolBFGS$hessian # Proporciona la matriz hessiana
+det(H)
+# Comprobamos la matriz hessiana con las soluciones BFGS es definida negativa
+library(matrixcalc)
+is.negative.definite(H)
+
+# CONTINUACION: Matriz de Informacion de Fisher Esperada (MIFE)11
+alphaMV<-SolBFGS$par[1]; betaMV<-SolBFGS$par[2] # Estimaciones de parametros
+# Funciones de (segundas derivadas * funcion de densidad)
+fa11=function(x){(-1/alphaMV^2-x^alphaMV*log(x)^2/betaMV)*(alphaMV/betaMV*x^(alphaMV-1)*exp(-x^alphaMV/betaMV))}
+fa22=function(x){(1/betaMV^2-2*x^alphaMV/betaMV^3)*(alphaMV/betaMV*x^(alphaMV-1)*exp(-x^alphaMV/betaMV))}
+fa12=function(x){(x^alphaMV*log(x)/betaMV^2)*(alphaMV/betaMV*x^(alphaMV-1)*exp(-x^alphaMV/betaMV))}
+# Terminos (esperanzas) de la Matriz de Informacion de Fisher Esperada
+a11=-num*integrate(f=fa11,lower=0,upper=Inf)$value
+a22=-num*integrate(f=fa22,lower=0,upper=Inf)$value
+a12=-num*integrate(f=fa12,lower=0,upper=Inf)$value
+# EFI: matriz de informacion de Fisher Esperada
+EFI<-matrix(c(a11,a12,a12,a22),ncol=2,byrow=TRUE)
+# Inversa de la matriz de informacion de Fisher Esperada
+InvEFI<-solve(EFI)
+InvEFI[1,1]; InvEFI[2,2] # Varianzas asintoticas de alphaMV y betaMV
+
+
+```
+# CONTINUACION: IC asintoticos desde la Matriz de Informacion de Fisher Esperada
+```{r}
+# IC asintotico alpha (95%):
+AlphaLower<-alphaMV-qnorm(0.975)*sqrt(InvEFI[1,1])
+AlphaUpper<-alphaMV+qnorm(0.975)*sqrt(InvEFI[1,1])
+print(c(AlphaLower,AlphaUpper))
+# IC asintotico beta (95%):
+BetaLower<-betaMV-qnorm(0.975)*sqrt(InvEFI[2,2])
+BetaUpper<-betaMV+qnorm(0.975)*sqrt(InvEFI[2,2])
+print(c(BetaLower,BetaUpper))
+
+# IC asintoticos desde la Matriz de Informacion de Fisher OBSERVADA
+# Alternativa 1: Utilizar la matriz hessiana proporcionada por constrOptim()
+H=SolBFGS$hessian # Proporciona la matriz hessiana
+InvH=solve(-H); InvH
+
+# IC asintotico alpha (95%):
+AlphaLower<-alphaMV-qnorm(0.975)*sqrt(InvH[1,1])
+AlphaUpper<-alphaMV+qnorm(0.975)*sqrt(InvH[1,1])
+print(c(AlphaLower,AlphaUpper))
+
+# IC asintotico beta (95%):
+BetaLower<-betaMV-qnorm(0.975)*sqrt(InvH[2,2])
+BetaUpper<-betaMV+qnorm(0.975)*sqrt(InvH[2,2])
+print(c(BetaLower,BetaUpper))
+```

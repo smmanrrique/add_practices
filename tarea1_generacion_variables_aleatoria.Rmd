@@ -1,6 +1,6 @@
 ---
-title: "tarea1_generacion_variables_aleatoria"
-author: "Shamuel Manrrique"
+title: "Generacion de Variables Aleatoria"
+author: "Shamuel Manrrique NIP:802400"
 nip: "802400"
 date: "10/25/2020"
 output:
@@ -12,42 +12,58 @@ output:
 
 Aplicar el método de la transformación inversa y/o el de aceptación rechazo para construir una función en R que genere datos de la siguientes distribuciones:
 
-5. **Distribución log exponencial-geométrica (Jodra y Jimenez, 2020)** de parámetros α > 0 y β > 0 con función de densidad: 
+5. **Distribución log exponencial-geométrica (Jodra y Jimenez, 2020)**: 
 ´
-f(x; α, β) = (α(1 + β)x^(α−1))/(1 + β x^α)^2, 0 < x < 1
+
+![ x={0..1},α > 0, β > 0 ](./screenshot/1.jpg?raw=True "Función de Densidad")
 
 ## Metodo de transformacion Inversa
-Buscamos la integral de la función de densidad para obtener la funcion de distribucion acumulado
 
->f(x; α, β) = (1 + β) x^(α - 1))/(1 + β x^α)^2 , 0 < x < 1, α > 0, β > 0
+Para el calculo de la función de densidad usando el metodo de la transformacion inversa es requerido llevar a cabo una serie de calculo matematicos, por practicidad se usa el software Maple. Maple es un paquete matematico multiplataforma, bastante intuitivo que permite resolver multiples problemas matematicos. Aclarado este punto se procede a seguir los siguiente pasos:
 
-1. Integramos la funcion usando WolframAlpha<https://www.wolframalpha.com/>
+  1. Se define la funcion de densidad
+  
+  >Pdf := (x, alpha, beta) -> alpha*(beta + 1)*x^(alpha - 1)/(1 + beta*x^alpha)^2;
+  
+  ![ x={0..1},α > 0, β > 0 ](./screenshot/1.jpg?raw=True "Función de Distribucion Acumulada")
 
->integral(α (1 + β) x^(α - 1))/(1 + β x^α)^2 dx = (1 + β)x^α/(1 + β x^α)
+  2. Integramos y simplificamos la funcion de densidad
+  
+  >(int(Pdf(x, alpha, beta), x = 0 .. t) assuming (0 < alpha, -1 < beta));simplify(%);
+  
+  ![ x={0..1},α > 0, β > 0 ](./screenshot/2.jpg?raw=True "Función de Distribucion Acumulada")
 
-2. La función de distribución acumulada es:
+  3. La función de distribución acumulada es:
 
->F(x; α, β) = (1 + β)x^α/(1 + β x^α)    , 0 < x < 1
+  >Cdf := (x, alpha, beta) -> (beta + 1)*x^alpha/(1 + beta*x^alpha)
+  
+  ![ x={0..1},α > 0, β > 0 ](./screenshot/3.jpg?raw=True "Función de Distribucion Acumulada")
 
+  4. Se calcula la función inversa de la función de distribución acumulada y se simplifica
 
-3. Buscamos la función inversa de la función de distribución acumulada
+  >solve(Cdf(x,alpha,beta)=u,x);simplify(%);
+  
+  ![ x={0..1},α > 0, β > 0 ](./screenshot/4.jpg?raw=True "Función de Distribucion Acumulada")
 
->inverse y = ((1 + β)x^α)/(1 + β x^α)  , 0 < x < 1, α > 0, β > 0
+  5. La función inversa de F o función cuantil es:
 
-4. La función inversa de F o función cuantil es:
+  >Q := (u, alpha, beta) -> (-u/(beta*u - beta - 1))^(1/alpha)
+  
+  ![ x={0..1},α > 0, β > 0 ](./screenshot/5.jpg?raw=True "Función de Distribucion Acumulada")
+  
 
->F(u; α, β)=(-u /(βu- β-1))^(1/α),  0 < u < 1
-
-5. Programa en R para crear muestras aleatoria siguiendo la Distribución log exponencial-geométrica
+  6. Una vez calculada la funcion inverda se procede a programar en R una funcion para crear de forma automatizada muestras aleatorias que siguen la Distribución log exponencial-geométrica (Jodra y Jimenez, 2020).
 
 ### Importar librerías necesarias
-```{r setup, error=FALSE, include=FALSE}
+```{r setup, warning=FALSE,message=FALSE}
 library("ggplot2")
-library("dplyr")          # load
+library("dplyr")         # load
 library("RcmdrMisc")
+library("nleqslv")       # Resolver sistema ecuaciones lineales/no lineales
+
 ```
 
-### Creamos la Función 
+### Funcion de Distribución log exponencial-geométrica en R 
 ```{r}
 
 # Definimos función para generar variables aleatoria siguiendo 
@@ -71,7 +87,8 @@ DatosJoJi <- function(α,β,n){
 
 # Definimos la Función de densidad PdfX para validar la correctitud de 
 # las variables aleatorias creadas con la función DatosJoJi 
-PdfX<- function(x,n){(n/10)*(α*(1 + β)*x^(α-1))/(1 + β*x^α)^2 }
+PdfX<- function(x,n){(α*(1 + β)*x^(α-1))/(1 + β*x^α)^2 }
+#PdfX<- function(x) {(α/β)*x^(α-1)*exp(-x^α/β)}
 
 
 # Declaramos los valores de α,β,n
@@ -83,50 +100,110 @@ n=1000;
 Dist_log_exp_geometrica <- DatosJoJi(α,β,n)
 
 # Graficamos un histograma con las variables obtenidas
-Hist(Dist_log_exp_geometrica, scale="frequency", breaks="Sturges", col="darkgray")
+Hist(Dist_log_exp_geometrica, scale="density", breaks="Sturges", col="darkgray")
 
 # Añadimos la curva de validacion a la grafica
-curve(PdfX(x,n), from=0, to=1.0, lwd=2, cex = 1.1, col="red",add=TRUE)
+curve(PdfX(x), from=0, to=1.0, lwd=2, cex = 1.1, col="red",add=TRUE)
 
 ```
 
 
+---
+
+# Practica 2
+
+Enunciado: Implementar en R, la lección de Métodos de Estimación,sección 1.3. de la siguiente funcion de dencidad:
+
+5. **Distribución log exponencial-geométrica (Jodra y Jimenez, 2020)**: 
+
+![ x={0..1},α > 0, β > 0 ](./screenshot/1.jpg?raw=True "Función de Densidad")
+
+
+Para el calulo de los estimadores existen varios metodos, en este caso nos centraremos en el metodo de los momentos y maxima verosimilitud.
+
+## Metodo de los Momentos 
+
+Se usar el metodo de los momento para determinar los estimadores alpha y beta, por lo que seguimos los siguientes pasos:
+
+1. Definimos la funcion
+
+>Pdf := (x, alpha, beta) -> alpha*(beta + 1)*x^(alpha - 1)/(1 + beta*x^alpha)^2
+
+2. Integramos la funcion usando el software Maple 
+
+>(int(x*Pdf(x, alpha, beta), x = 0 .. 1) assuming (0 < alpha, 0 < beta));
+simplify(%);
+
+>(int(x^2*Pdf(x, alpha, beta), x = 0 .. 1) assuming (0 < alpha, 0 < beta));
+simplify(%);
+
+3. Los momentos respecto al origen son:
+![ image ](./screenshot/6.jpg)
+
+4. Transcribir eso 
+![ image ](./screenshot/elimi.jpg)
+
+## Implementacion en R 
 ```{r}
-# Generar datos con densidad: f(x)=2*sqrt(x)*exp(-x)/sqrt(pi), x>0.
-# Tomar g(x)=(2/3)*exp(-(2/3)*x), x>0. # Max x{f(x)/cg(x)} en x=3/2.
-c<-3^(3/2)*(2*pi*exp(1))^(-1/2)
-# Funcion para generar Num datos con densidad f(x):
-DatosPdfX<-function(Num){
-  Aceptados<-rep(0,Num); i<-1
-  while(i<=Num){
-    y<-rexp(1,2/3); u<-runif(1,0,1)
-    if (u<c*(3*exp(-(1/3)*y)*sqrt(y)/sqrt(pi))){
-      Aceptados[i]<-y; i<-i+1} }
-    return(Aceptados)
+# Declaramos los valores de α,β,n
+α=2; 
+β=3;    
+n=1000; # Numero de datos a generar
+
+VData = DatosJoJi(α,β,n) # generamos n muestras aleatorias con la funcion de distribucion
+
+M1 = mean(VData)   # Momentos muestrales 
+M2 = mean(VData^2) # Momentos muestrales
+
+# Funcion con el sistema de ecuaciones
+SistemaM <- function(x) {
+    # ALPHA x[1]
+    # BETA x[2]
+  
+    y <- numeric(2)
+    y[1] <- (x[1]*(x[2]+1) - 1^(x[1]+1)/(1+x[2]*1^(x[1]))^2 )-M1
+    y[2] <- (x[1]*(x[2]+1) - 1^(x[1]+2)/(1+x[2]*1^(x[1]))^2 )-M2
+    return(y) 
 }
 
-Generados<-DatosPdfX(10000)
-library(RcmdrMisc)
-Hist(Generados,col="blue", scale="density",xlab="x")
-PdfX<- function(x){2*sqrt(x)*exp(-x)/sqrt(pi)}
-curve(PdfX(x), from=0, to=10, lwd=2, cex = 1.1, col="red", add=TRUE)
+# Resolver el sistema
+xstart <- c(0.1,1) 
+SolSistem<-nleqslv(xstart, SistemaM, jacobian=TRUE)
+
+# Estimaciones metodo de los momentos:
+alphaM<-SolSistem$x[1]; alphaM
+betaM<-SolSistem$x[2]; betaM
+```
+
+Estos resultados obtenidos con la funcion implementada permiten comprobar que el método de los momentos no te permite obtener estimadores de los parámetros para esta funcion. Esto se deduce tambien al  ver el resultado de los momentos respecto al origen, tanto beta como alpha son argumentos de la función de Lerch y no es posible obtener estimaciones resolviendo el sistema formado por las ecuaciones E[X]-M1=0 y E[X^2]-M2=0, siendo M1 y M2 los momentos muestrales de orden 1 y 2, respectivamente.
+
+
+## Metodo de maxima verosimilitud
+```{r}
+  
+
+
+
+
+
 
 ```
+
+
+---
+
+# Practica 3
+Los estudiantes de Análisis Avanzado de Datos tienen asignado
+un número que se corresponde con el ejemplo que tienen que
+implementar en R, de la lección Simulación Monte Carlo,
+sección 1.5. 
+
 ```{r}
 
-DatosWeibull<-function(alpha,beta,m){
-VectorUnif<-runif(m,0,1) # Generar "m" datos uniforme (0,1)
-# Datos Weibull mediante transformacion de datos exponenciales11
-DataSet<- (-beta * log(1-VectorUnif))^ (1/alpha)
-return(DataSet)}
-library(RcmdrMisc)
-Hist(DatosWeibull(3,2,10000),col="blue", scale="density",xlab="x")
-#Funcion de densidad:
-alpha=3; beta=2
 
-PdfX<- function(x){ (alpha/beta)*x^(alpha-1)*exp(-x^(alpha/beta)) }
 
-curve(PdfX(x), from=0, to=15, lwd=4, cex = 1.1, col="red",add=TRUE)
+
+
 
 
 ```

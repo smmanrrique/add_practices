@@ -1,0 +1,48 @@
+---
+title: "simulacion_monte_carlos"
+author: "Shamuel Manrrique"
+date: "10/27/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+num<-100000 # Se generan num datos
+
+X1<-rexp(num,1); X2<-rexp(num,2); X3<-rexp(num,3)
+X4<-rexp(num,4); X5<-rexp(num,5); X6<-rexp(num,6)
+
+X12<-pmax(X1,X2); X34<-pmax(X3,X4); X56<-pmax(X5,X6); X1234<-pmin(X12,X34)
+
+T<-pmax(X1234,X56)
+# T
+
+muT<-mean(T);
+varT<-var(T);
+sdT<-sd(T)
+muT;varT;sdT # Esperanza, varianza y desviacion tipica de T
+# Intervalo de confianza (95%) asintotico para E[T]:
+muT-sdT/sqrt(num)*qnorm(0.975,0,1); muT+sdT/sqrt(num)*qnorm(0.975,0,1)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

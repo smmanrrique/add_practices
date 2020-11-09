@@ -1,36 +1,40 @@
 ---
-title: "baseDatosPlasma"
-author: "Shamuel Manrrique"
-NIP: "802400"
+title: "Base de Datos Plasma"
+author: "Shamuel Manrrique NIP:802400"
 date: "10/20/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
+NIP: '802400'
 ---
 
 # Ejercicio propuesto 1
+
 En el fichero de datos Base Datos Plasma Retinol.tex se tienen las variables cuantitativas CHOLESTEROL, BETADIET, RETDIET, BETAPLASMA y RETPLASMA. En este fichero de texto se comentan esas variables. Además, se dispone de la variable cualitativa (factor) GÉNERO que agrupa los datos en dos niveles: Hombre y Mujer.
  
 ## Import libraries
-```{r}
+```{r,warning=FALSE,message=FALSE}
 library("RcmdrMisc")
 library("ggplot2")
 library("dplyr")          # load
 ```
  
-## Cargamos los datos que se encuentran en BaseDatosPlasmaCompleta.RData
+## Carga de los datos que se encuentran en BaseDatosPlasmaCompleta.RData
 ```{r}
-load("~/add_practices/practice1/datasets/BaseDatosPlasmaCompleta.RData")
+load("C:/Users/smmanrrique/3D Objects/unizar/ADD Análisis avanzado de datos/aad_practices/practice1/datasets/BaseDatosPlasmaCompleta.RData")
 ```
  
-## Obtenemos un resumen general de la información del dataset
+## Resumen general de la información del dataset
 ```{r}
 summary(Dataset)
 ```
  
 ## Estadística descriptiva 
-Para la variable cuantitativa CHOLESTEROL se considera, en primer lugar, los datos conjuntamente (sin distinguir por género) y, en segundo lugar, agrupando por la variable GÉNERO. 
+Para la variable cuantitativa CHOLESTEROL se considera, en primer lugar, los datos de forma conjunta(sin distinguir por género) y, en segundo lugar, agrupando por la variable GÉNERO. 
 
-## Datos sin agrupar por GÉNERO
-### Analizamos los datos sin agrupación por genero
+## Datos conjuntos
+
+### Analizamos los datos tomando en cuenta el factor colesterol
 ```{r}
 # Todas las variables cuantitativas
 numSummary(Dataset[,c("Cholesterol"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
@@ -75,11 +79,13 @@ normalityTest(~Cholesterol, test="pearson.test", data=Dataset)
 with(Dataset, qqPlot(Cholesterol, dist="norm", id=list(method="y", n=2, labels=rownames(Cholesterol))))
  
 ```
-los valores arrojados por las pruebas indican que p-value < 2.2e-16 y en el mejor de los casos p-value = 7.37e-10(Cramer) por lo que rechazamos la hipótesis nula y podemos asumir que la función de distribución de la variable aleatoria Colesterol es distinta a la normal. De igual forma se puede corroborar con la gráfica qq-plot se nota que los valores sobresalen en gran parte de los límites, lo que es un indicio de que no hay normalidad. 
+Los valores arrojados por las pruebas indican que p-value < 2.2e-16 y en el mejor de los casos p-value = 7.37e-10(Cramer) por lo que rechazamos la hipótesis nula y podemos asumir que la función de distribución de la variable aleatoria Colesterol es distinta a la normal. De igual forma se puede corroborar con la gráfica qq-plot se nota que los valores sobresalen en gran parte de los límites, lo que es un indicio de que no hay normalidad. 
+
 ---
-## Agrupar por el GÉNERO
-### Datos agrupando por la variable GÉNERO
-Análisis conjunto de las variables cuantitativa CHOLESTEROl agrupada por género
+
+## Datos Agrupados por el género
+
+### Análisis conjunto de las variables cuantitativa CHOLESTEROl agrupada por género
 ```{r}
 # Resumen estadístico de la variable colesterol por genero
 numSummary(Dataset[,c("Cholesterol"), drop=FALSE], groups = Dataset$Género, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
@@ -118,7 +124,6 @@ El valor obtenido por el p-value es mayor a 0.05 lo que significa que aceptamos 
 ```{r}
 wilcox.test(Cholesterol~Género, data = Dataset)
 #wilcox.test(Cholesterol~Género, data = Dataset, paired = TRUE)
-
 #wilcox.test(Dataset~Homicidios, Dataset~Región, alternative = "g")
 ```
 El valor del p-value es menor a 0.05 por lo que rechazo la hipótesis nula y determino que el factor genero influye en el colesterol  

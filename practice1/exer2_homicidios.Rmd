@@ -1,12 +1,13 @@
 ---
-title: "baseDatosPlasma"
-author: "Shamuel Manrrique"
+title: "Homicidios"
+author: "Shamuel Manrrique NIP:802400"
 NIP: "802400"
 date: "10/20/2020"
-output: html_document
+output: pdf_document
 ---
 
 # Ejercicio propuesto 2
+
 En el fichero de datos Homicidios.RData se tiene la variable cuantitativa Homicidios que indica el número de homicidios al año en las distintas regiones y subregiones de diferentes países del mundo.Además, se dispone de las variables cualitativas (factor) Region y Subregion.
 
 1. Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones.
@@ -15,7 +16,7 @@ En el fichero de datos Homicidios.RData se tiene la variable cuantitativa Homici
 
 
 ## Import libraries
-```{r,  echo=FALSE}
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library("RcmdrMisc")
 library("ggplot2")
 library("dplyr")          # load
@@ -23,32 +24,35 @@ library("lawstat")
 
 ```
  
-## Cargamos los datos que se encuentran en Homicidios.RData
+## Cargar los datos de Homicidios.RData
 ```{r}
-load("~/add_practices/practice1/datasets/Homicidios.RData")
+load("C:/Users/smmanrrique/3D Objects/unizar/ADD Análisis avanzado de datos/aad_practices/practice1/datasets/Homicidios.RData")
 ```
  
-## Obtenemos un resumen general de la información del dataset
+## Resumen general de la información del dataset
 ```{r}
 summary(Dataset)
 ```
  
 ## 1. Estadistica descriptiva 
+
 Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones. 
  
 ## Region
+
 #### Datos de Homicidios agrupando por regiones.
 ```{r}
 # Homicidios por regiones
 numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Región, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
 
+# Grafia de Boxplot de Homicidios por regiones
 Boxplot(Homicidios~Región, data=Dataset, id=list(method="y"))
 ```
-Observando los datos de la variable Colesterol se puede decir que la media es de 255.7057, con una desviación típica de 159.1196, rango en (37.7,1153). También obtenemos un valor de skewness positivo, esto indica que la distribución tiene una asimetría positiva. El 50% de los valores de colesterol en las personas supera el 211.7. La muestra es de tamaño n = 363.
+Observando los datos datod por region muestra una relacion entre el numero de paises que conforman una region y la deviacion estandar. La region de Africa por ejemplo esta compuesta con datos de 53 paises con una desviacion estandar de 11531.6791, mientras que oceania contiene datos de 14 paises y tiene una desviacion estandar de 194.9464. El valor del skewness vastante alto  en todas las regiones indica que la distribucion tiene una asimetria positiva. Casi todas las regiones excepto America tienen un valor de kurtosis mayor a tres(leptokurtosis) es decir que existen valores atipicos en estas distribuciones. Sin embargo, aunque el valor de kutosis en America es bajo es la region con mayor desviacion estandar(11531.6791 sd) y esparcimiento(17463.00  IQR). 
 
+ 
 
-
-### Validamos que los datos siguen una distribucion Normal
+### Validar que los datos siguen una distribucion Normal
 ```{r}
 # Histogram with density plot
 ggplot(data=Dataset , aes(x=Homicidios)) + 
@@ -65,19 +69,18 @@ normalityTest(Homicidios~Región, test="cvm.test", data=Dataset)  # Cramer
 with(Dataset, qqPlot(Homicidios, dist="norm", id=list(method="y", n=2, labels=rownames(Homicidios))))
  
 ```
+Los valores optenidos en cada uno de los p-valores indican que la funcion de probabilidad no sigue una distribucion normal, para realizar las pruebas de varianza y media iguales se usaran otras heuristicas que no requieran normalidad.
 
-Los valores optenidos en cada uno de los p-valores indican que no poseemos una distribucion normal. por lo que para realizar las pruebas de varianza y media iguales se usaran otras heuristicas que no requieran normalidad.
-
-### Validamos si las dos varianzas son iguales o no 
+### Validar si las dos varianzas son iguales o no 
 ```{r}
 # Test Levene para dos varianzas con distribuciones distintas a la normal
 # leveneTest(Homicidios~Región, data=Dataset)
 leveneTest(Homicidios~Región, data=Dataset, center=mean)
 
 ```
-Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que las varianzas son iguales Por lo que asumimos varianzas distintas.
+Con el valor obtenido menor a 0.05 no es significativo para decir que las varianzas son iguales, por lo que asumimos varianzas distintas.
 
-### Validamos si las dos medias son iguales o no 
+### Validar si las dos medias son iguales o no 
 ```{r}
 #wilcox.test(Homicidios~Región, data = Dataset)
 #wilcox.test(Homicidios~Región, data = Dataset, subset = Región %in% c("África", "América"), paired = TRUE)
@@ -85,26 +88,31 @@ Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que
 #wilcox.test(Homicidios~Región, data = Dataset, paired = TRUE)
 
 
-#wilcox.test(Dataset~Homicidios, Dataset~Región, alternative = "g")
-
+wilcox.test(Dataset~Homicidios, Dataset~Región, alternative = "g")
 
 ```
+
+
 ---
 
 ## Subregion
-#### Datos de Homicidios agrupando por regiones.
+
+#### Datos de Homicidios agrupando por subregiones.
 ```{r}
 # Homicidios por regiones
-numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Región, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Subregión, statistics=c("mean", "sd", "IQR", "quantiles"), quantiles=c(0,.25,.5,.75,1))
 
+
+# Grafia de Boxplot de Homicidios por regiones
 Boxplot(Homicidios~Subregión, data=Dataset, id=list(method="y"))
 ```
+Se obtuvo solo la informacion de las medias y desviacion estandar por subregion, los valores de skewness y kurtosis no se pudieron calcular dado que muchas de las subregiones no tenia muestras mayores a cuatro lo cual era requerido para para estos test. Vemos que los valores de desviacion son bastante altos. 
 
 ### Validamos que los datos siguen una distribucion Normal
 ```{r, error=FALSE, include=FALSE}
 # Prueba de normalidad por Región
 #normalityTest(Homicidios~Subregión, test="shapiro.test", data=Dataset) # Shapiro
-# normalityTest(Homicidios~Subregión, test="ad.test", data=Dataset)   # Anderson-Darling
+#normalityTest(Homicidios~Subregión, test="ad.test", data=Dataset)   # Anderson-Darling
 normalityTest(Homicidios~Subregión, test="lillie.test", data=Dataset) 
 normalityTest(Homicidios~Subregión, test="cvm.test", data=Dataset)  # Cramer
 
@@ -112,6 +120,8 @@ normalityTest(Homicidios~Subregión, test="cvm.test", data=Dataset)  # Cramer
 with(Dataset, qqPlot(Homicidios, dist="norm", id=list(method="y", n=2, labels=rownames(Homicidios))))
  
 ```
+Se obtuvo que en la mayoria de los casos las distribuciones por subregiones no son normal, dado que el valor del p-value es menor a 0.05.
+
 ### Validamos si las dos varianzas son iguales o no 
 ```{r}
 # Test Levene para dos varianzas con distribuciones distintas a la normal
@@ -124,9 +134,12 @@ Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que
 ### Validamos si las dos medias son iguales o no 
 ```{r}
 #wilcox.test(Homicidios~Subregión, data = Dataset)
-#wilcox.test(Homicidios~Subregión, data = Dataset, subset = Región %in% c("África", "América"), paired = TRUE)
+#wilcox.test(Homicidios~Subregión, data = Dataset, subset = Subregión %in% c("África", "América"), paired = TRUE)
 #wilcox.test(Homicidios~Subregión, data = Dataset)
 #wilcox.test(Homicidios~Subregión, data = Dataset, paired = TRUE)
 
+
+
+#wilcox.test( filter(Dataset, Dataset$Subregión=="África")$Homicidios, filter(Dataset, Subregión=="América")$Homicidios, paired=TRUE)
 
 #wilcox.test(Dataset~Homicidios, Dataset~Región, alternative = "g")

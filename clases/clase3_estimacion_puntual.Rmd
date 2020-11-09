@@ -1,0 +1,121 @@
+---
+title: "clase3_maxima_verosimilitud"
+author: "Shamuel Manrrique"
+date: "10/27/2020"
+output: html_document
+---
+
+## Importar librerías necesarias
+```{r setup, error=FALSE, include=FALSE}
+# install.packages("nleqslv")
+library(nleqslv) # Resolver sistema ecuaciones con funcion nleqslv()
+```
+
+## WEIBULL
+## Metodo de los Momentos
+```{r}
+
+rm(list=ls()) # Borrar objetos de memoria
+
+Alpha=2; Beta=3 # Valor exacto de parametros
+num=1000 # Numero datos a generar
+
+# Funcion genera vector con num datos Weibull
+VectorDatosW<-function(Alpha,Beta,num){
+  VectorUnif<-runif(num,0,1)
+  
+  WEIB<- ((-Beta)*log(1-VectorUnif))^(1/Alpha)
+}
+  
+# Vector generado de datos Weibull
+VData<-VectorDatosW(Alpha,Beta,num)
+
+# CONTINUACION: Metodo de los Momentos
+# Momentos muestrales
+M1<-mean(VData); M2<-mean(VData^2)
+  
+# Funcion con el sistema de ecuaciones
+SistemaM <- function(x) {
+    # BETA x[2]
+    # ALPHA x[1]
+  
+    y <- numeric(2)
+    y[1] <- x[2]^(1/x[1])*(1/x[1])*gamma(1/x[1])-M1
+    y[2] <- x[2]^(2/x[1])*(2/x[1])*gamma(2/x[1])-M2
+    return(y) 
+}
+
+# Resolver el sistema
+xstart <- c(0.1,0.1) 
+# xstart <- c(1,1) # Punto de inicio2 para resolver el sistema, a veces cambiar el punto de inicio 
+help(nleqslv)
+SolSistem<-nleqslv(xstart, SistemaM, jacobian=TRUE)
+# Estimaciones metodo de los momentos:
+alphaM<-SolSistem$x[1]; alphaM
+betaM<-SolSistem$x[2]; betaM
+
+```
+```{r}
+#MOMENTOS DE MAXIMA VEROSIMILITUD
+alpha<- alphaM
+beta<- betaM
+# Funcion de log-verosimilitud:
+LogLike <- function(param){alpha <- param[1];beta <- param[2]
+LL<- sum(log(alpha)-log(beta)+(alpha-1)*log(VData)-(1/beta)*VData^(alpha))
+return(LL)}
+
+# Gradiente (primeras derivadas)
+Gradiente<-function(param){alpha <- param[1]; beta <- param[2]
+Grad1<-sum((1/alpha)+log(VData)-(1/beta)*(log(VData)*VData^(alpha)))
+Grad2<-sum((-1/beta)+(1/beta^2)*VData^(alpha))
+Gradi<-c(Grad1,Grad2)}
+
+
+
+
+
+#=====================================
+Inicio<-c(alpha,beta) # Punto inicio para resolver sistema10
+# Resolver sistema ecuaciones normales con nleqslv()
+
+SolSistema<-nleqslv(Inicio, fn=Gradiente)
+# Soluciones del sistema
+SolSistema$x[1]; alphaMV<-SolSistema$x[1]
+SolSistema$x[2]; betaMV<-SolSistema$x[2]
+LogLike(c(alphaMV,betaMV)) # Valor de Log-likelihood en el optimo
+
+
+# Chequear hessiano es definido negativo
+# Componentes del hessiano (evaluado en los datos y con las estimaciones MV)
+A11<-(-1)*(num/alphaMV^2)-(1/betaMV)*sum(VData^alphaMV*(log(VData))^2)
+A22<-(num/betaMV^2)-(2/betaMV^3)*sum(VData^alphaMV)
+A12<-(1/betaMV^2)*sum((VData^alphaMV)*log(VData))
+Determ<-A11%*%A22-A12%*%A12
+A11 # Primer menor: ha de ser negativo")
+Determ # Segundo menor: ha de ser postivo:")
+
+
+# 32 CONTINUACION: Estimaciones MV resolviendo el Problema de Optimizacion
+# Resolver problema de optimizacion con constrOptim()
+
+# Algoritmo de Nelder-Mead
+SolNelderMead<-constrOptim(Inicio,LogLike,Gradiente,method="Nelder-Mead", ui=rbind(c(1,0), c(0,1)), ci=c(0,0), control=list(fnscale=-1),hessian=TRUE)
+# Estimaciones de parametros
+SolNelderMead$par[1]; SolNelderMead$par[2]
+SolNelderMead$value # Valor de log-verosimilitud
+SolNelderMead$hessian # Proporciona la matriz hessiana
+
+
+# Algoritmo BFGS
+SolBFGS<-constrOptim(Inicio,LogLike,Gradiente,method="BFGS", ui=rbind(c(1,0), c(0,1)), ci=c(0,0), control=list(fnscale=-1),hessian=TRUE)
+# Estimaciones de parametros
+SolBFGS$par[1];SolBFGS$par[2]
+SolBFGS$value # Valor de log-verosimilitud
+H=SolBFGS$hessian # Proporciona la matriz hessiana
+det(H)
+# Comprobamos la matriz hessiana con las soluciones BFGS es definida negativa
+library(matrixcalc)
+is.negative.definite(H)
+
+```
+
