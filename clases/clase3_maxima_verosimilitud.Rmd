@@ -13,6 +13,42 @@ library(nleqslv) # Resolver sistema ecuaciones con funcion nleqslv()
 
 ## 
 ```{r}
+Alpha=2
+Beta=3 # Valor exacto de parametros
+num=1000 # Numero datos a generar
+
+# Funcion genera vector con num datos Weibull
+VectorDatosW<-function(Alpha,Beta,num){
+  VectorUnif<-runif(num,0,1)
+  WEIB<- ((-Beta)*log(1-VectorUnif))^(1/Alpha)
+}
+
+# Vector generado de datos Weibull
+VData<-VectorDatosW(Alpha,Beta,num)
+
+# Funcion de log-verosimilitud:
+LogLike <- function(param){
+  alpha <- param[1];beta <- param[2]
+  LL<- sum(log(alpha)-log(beta)+(alpha-1)*log(VData)-(1/beta)*VData^(alpha))
+  return(LL)
+  }
+
+# Gradiente (primeras derivadas)
+Gradiente<-function(param){
+  alpha <- param[1]; beta <- param[2]
+  Grad1<-sum((1/alpha)+log(VData)-(1/beta)*(log(VData)*VData^(alpha)))
+  Grad2<-sum((-1/beta)+(1/beta^2)*VData^(alpha))
+  Gradi<-c(Grad1,Grad2)
+}
+
+Inicio<-c(1,1) # Punto inicio para resolver sistema
+SolSistema<-nleqslv(Inicio, fn=Gradiente)
+
+# Soluciones del sistema
+SolSistema$x[1]; alphaMV<-SolSistema$x[1]
+SolSistema$x[2]; betaMV<-SolSistema$x[2]
+
+LogLike(c(alphaMV,betaMV)) # Valor de Log-likelihood en el optimo
 
 # Chequear hessiano es definido negativo
 # Componentes del hessiano (evaluado en los datos y con las estimaciones MV)
@@ -23,13 +59,27 @@ Determ<-A11%*%A22-A12%*%A12
 A11 # Primer menor: ha de ser negativo")
 Determ # Segundo menor: ha de ser postivo:")
 
+
 # Algoritmo BFGS
 SolBFGS<-constrOptim(Inicio,LogLike,Gradiente,method="BFGS", ui=rbind(c(1,0), c(0,1)), ci=c(0,0), control=list(fnscale=-1),hessian=TRUE)
+
+
 # Estimaciones de parametros
-SolBFGS$par[1];SolBFGS$par[2]
+SolBFGS$par[1]
+SolBFGS$par[2]
+
+
 SolBFGS$value # Valor de log-verosimilitud
 H=SolBFGS$hessian # Proporciona la matriz hessiana
 det(H)
+
+
+
+```
+# CONTINUACION: IC asintoticos desde la Matriz de Informacion de Fisher Esperada
+```{r}
+
+
 # Comprobamos la matriz hessiana con las soluciones BFGS es definida negativa
 library(matrixcalc)
 is.negative.definite(H)
@@ -51,13 +101,14 @@ InvEFI<-solve(EFI)
 InvEFI[1,1]; InvEFI[2,2] # Varianzas asintoticas de alphaMV y betaMV
 
 
-```
-# CONTINUACION: IC asintoticos desde la Matriz de Informacion de Fisher Esperada
-```{r}
+
+
+
 # IC asintotico alpha (95%):
 AlphaLower<-alphaMV-qnorm(0.975)*sqrt(InvEFI[1,1])
 AlphaUpper<-alphaMV+qnorm(0.975)*sqrt(InvEFI[1,1])
 print(c(AlphaLower,AlphaUpper))
+
 # IC asintotico beta (95%):
 BetaLower<-betaMV-qnorm(0.975)*sqrt(InvEFI[2,2])
 BetaUpper<-betaMV+qnorm(0.975)*sqrt(InvEFI[2,2])
