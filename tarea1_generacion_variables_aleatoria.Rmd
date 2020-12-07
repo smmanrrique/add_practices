@@ -61,6 +61,8 @@ library("dplyr")         # load
 library("RcmdrMisc")
 library("nleqslv")       # Resolver sistema ecuaciones lineales/no lineales
 library("matrixcalc")
+library("zeallot")       #Many parameters
+library("matrixcalc")    # Comprobar matriz hessiana negativa
 
 ```
 
@@ -113,7 +115,7 @@ curve(PdfX(x), from=0, to=1.0, lwd=2, cex = 1.1, col="red",add=TRUE)
 
 # Practica 2
 
-Enunciado: Implementar en R, la lección de Métodos de Estimación,sección 1.3. de la siguiente funcion de densidad:
+Implementar en R un Métodos de Estimación para la siguiente funcion de densidad:
 
 5. **Distribución log exponencial-geométrica (Jodra y Jimenez, 2020)**: 
 
@@ -240,6 +242,21 @@ Gradiente<-function(params){
   return(Gradi)
 }
 
+# Funcion que el calculo de las segundas derivadas
+seg_derivadas<-function(params){
+  alpha = params[1]
+  beta = params[2]
+  miid = params[2]
+  
+  A11 = sum((-1)*(n/alpha^2) - 2*n*beta*(log(miid)^2)*(miid^alpha)/(1 + beta*miid^alpha)^2)
+
+  A12 = sum((-2)*n*(log(miid)*miid^alpha)/(1 + beta*miid^alpha)^2)
+
+  A22 = sum((-1)*n/(beta + 1)^2 - 2*n*(miid^(2*alpha))/(1 + beta*miid^alpha)^2)
+  return(c(A11,A12,A22))
+
+}
+
 # Declaramos los valores de α,β,n
 α=2; 
 β=3;    
@@ -251,7 +268,7 @@ miid = DatosJoJi(α,β,n)
 
 # Punto de inicio el valor de alphaM y betaM
 # obtenido por el metodo de los momentos
-inicio<-c(alphaM,betaM) 
+inicio<-c(alphaM,betaM, mii) 
 
 SolSistema<-nleqslv(inicio, fn=Gradiente)
 
@@ -269,23 +286,25 @@ va = LogLike(inicio) # Evalua Log-likelihood
 
 message(sprintf("Valor de Log-likelihood en el optimo es 
                 va = %s ", va))
-```
 
-```{r}
-alpha = alphaMV
-beta = betaMV
 
-# Chequear hessiano es definido negativo
-# Componentes del hessiano (evaluado en los datos y con las estimaciones MV)
-A11 = sum((-1)*(n/alpha^2) - 2*n*beta*(log(miid)^2)*(miid^alpha)/(1 + beta*miid^alpha)^2)
-A12 = sum((-2)*n*(log(miid)*miid^alpha)/(1 + beta*miid^alpha)^2)
-A22 = sum((-1)*n/(beta + 1)^2 - 2*n*(miid^(2*alpha))/(1 + beta*miid^alpha)^2)
-
+c(A11, A12, A22) %<-% seg_derivadas(c(1,1))
 
 Determ = A11%*%A22-A12%*%A12
 A11 # Primer menor: ha de ser negativo")
 Determ # Segundo menor: ha de ser postivo:")
 
+
+```
+Una vez estimados los parametros es necesario hacer caculos necesarios para validar que el  Hessiano es definido negativo. Para la construccion del Hesiano se deben calcular las derivadas seguindas, para evitar estos calculos se empleara el el metodo de 
+
+
+Broyden–Fletcher–Goldfarb–Shanno(BFGS) con el paquete de R que trae implementado el metodo constrOptim el cual unicamente necesita la función y su gradiente, pero no la matriz Hessiana. Por el contraria este la proporciona.
+
+
+
+####
+```{r}
 inicio<-c(alpha,beta)
 
 # Algoritmo BFGS
@@ -301,8 +320,6 @@ betaMV = SolBFGS$par[2]
 message(sprintf("betaMV = %s por metodo de MV", betaMV))
 
 ```
-Una vez estimados los parametros es necesario hacer caculos necesarios para validar que el  Hessiano es definido negativo. Para la construccion del Hesiano se deben calcular las derivadas seguindas, para evitar estos calculos se empleara el el metodo de 
-Broyden–Fletcher–Goldfarb–Shanno(BFGS) con el paquete de R que trae implementado el metodo constrOptim el cual unicamente necesita la función y su gradiente, pero no la matriz Hessiana. Por el contraria este la proporciona.
 
 ```{r}
 
@@ -386,8 +403,8 @@ InvEFI[2,2] # Varianzas asintoticas de alpha MV y beta MV
 
 ```{r}
 # IC asintotico alpha (95%):
-AlphaLower<-alphaMV-qnorm(0.975)*sqrt(InvEFI[1,1])
-AlphaUpper<-alphaMV+qnorm(0.975)*sqrt(InvEFI[1,1])
+AlphaLower<-alphaMV-qnorm(0.95)*sqrt(InvEFI[1,1])
+AlphaUpper<-alphaMV+qnorm(0.95)*sqrt(InvEFI[1,1])
 print(c(AlphaLower,AlphaUpper))
 
 # IC asintotico beta (95%):
@@ -415,16 +432,20 @@ print(c(BetaLower,BetaUpper))
 
 ---
 
+
+---
+
 # Practica 3 Monte Carlos
 
-Los estudiantes de Análisis Avanzado de Datos tienen asignado
-un número que se corresponde con el ejemplo que tienen que
-implementar en R, de la lección Simulación Monte Carlo,
-sección 1.5. 
+Realizar un estudio de simulacion Monte Carlo para analizar y comparar el rendimiento de este metodo con el metodo de maxima verosimilitud. Para ello implementaremos en R una funcion para para analizar el comportamiento del metodo de maxima verosimilitud para estimar los parametros de 
+
+
+
+partimos  una m.a.s. de tamano n a la cual se le obtuvo el estimador MV de los siguientes modelos. Para ello, fijar valores de los parametros, generar una muestra de tamano n y, a continuacion, obtener los estimadores MV 
+
 
 ```{r}
-library(nleqslv) # Resolver sistema de ecuaciones
-library(matrixcalc) # Comprobar matriz hessiana negativa
+
 Alpha=2; Beta=3 #Valor exacto de los parametros:
 N=10^4 # Muestras a generar
 num=50 # Tama~no de cada muestra
