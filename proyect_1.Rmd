@@ -569,7 +569,7 @@ cvm.test(datos,"pexp", rate=0.1278606)
 
 ## Ajuste de modelos clasicos: Gamma
 ```{r}
-juste2<-fitdist(datos,method=c("ml"),"gamma")
+ajuste2 = fitdist(datos,method=c("ml"),"gamma")
 summary(ajuste2)
 plot(ajuste2)
 vcov(ajuste2)
@@ -625,6 +625,7 @@ cvm.test(datos,"pweibull", shape=0.8003306,scale=6.9697288)
   | WEIBULL |   shape	0.8003306 (0.0907104) scale:6.9697288 (1.2921910)     |   -150.6768    |  305.3535   |    309.1776    |
 
 
+En el cuadro resumen se puede apreciar que el valor mas alto de log L se obtiene con la distribucion Gamma, tambien se puede observar qie los valores mas bajos para AIC y BIC los posee esta misma distribucion.
 
   |  Modelo     |  Kolmogorov-Smirnov p-valor |  Anderson-Darling p-valor | Cramer-von Mises p-valor |
   |:-----------:|:---------------------------:|:---------:|:-----------:|
@@ -634,7 +635,43 @@ cvm.test(datos,"pweibull", shape=0.8003306,scale=6.9697288)
   
   
 
+Como se puede apreciar el ajuste mas satisfactorio se obtiene con la distribucion gamma. 
 
+## Tabla resumen con los de resultados 
+ 
+```{r}
+library(fitdistrplus); library(goftest)
+
+R=1000 # Numero replicas bootstrap para determinar la bondad del ajuste Gamma
+num=length(datos)
+# Valor de cada estadistico para la muestra observada:
+Ajuste2TestKS<-ks.test(datos,"pgamma",shape=0.69538647,rate=0.08889248)$statistic
+Ajuste2TestAD<-ad.test(datos,"pgamma",shape=0.69538647,rate=0.08889248)$statistic
+Ajuste2TestCVM<-cvm.test(datos,"pgamma",shape=0.69538647,rate=0.08889248)$statistic
+
+contKS<-0;contAD<-0;contCVM<-0
+
+for (i in 1:R){
+ReplicaGamma<-c(0,num);
+Auxshape<-0;
+Auxrate<-0
+ReplicaGamma<-rgamma(num, shape=0.69538647,rate=0.08889248)
+Auxshape=fitdist(ReplicaGamma, method = c("mle"),"gamma")$estimate[1]
+Auxrate=fitdist(ReplicaGamma, method = c("mle"),"gamma")$estimate[2]
+EstKS<-ks.test(ReplicaGamma,"pgamma",shape=Auxshape,rate=Auxrate)$statistic
+EstAD<-ad.test(ReplicaGamma,"pgamma",shape=Auxshape,rate=Auxrate)$statistic
+EstCVM<-cvm.test(ReplicaGamma,"pgamma",shape=Auxshape,rate=Auxrate)$statisti
+if (EstKS>Ajuste2TestKS) contKS<-contKS+1
+if (EstAD>Ajuste2TestAD) contAD<-contAD+1
+if (EstCVM>Ajuste2TestCVM) contCVM<-contCVM+1
+}
+pvalorKS<-contKS/R;
+pvalorAD<-contAD/R;
+pvalorCVM<-contCVM/R
+pvalorKS; 
+pvalorAD; 
+pvalorCVM
+```
   
   
   
