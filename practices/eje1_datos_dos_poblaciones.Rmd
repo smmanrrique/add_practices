@@ -1,0 +1,149 @@
+---
+title: "datos_dos_poblaciones"
+author: "Shamuel Manrrique"
+date: "10/25/2020"
+output: html_document
+---
+
+# Ejercicio de clase usando los datos de Datos2Poblaciones
+<!-- Ejercicio
+Se desea comparar el tiempo de ejecucion de dos algoritmos: AL1 y AL2. Para ello ´
+se dispone de dos muestras independientes de datos correspondientes a los tiempos
+de CPU de ejecucion de ambos algoritmos. ´
+Los datos estan en el fichero Datos2poblaciones.RData. ´
+(1) Realizar pruebas estad´ısticas tanto graficas como anal ´ ´ıticas para establecer la
+posible normalidad de los datos.
+(2) En el caso de apreciarse normalidad en los datos, ¿cuales son los par ´ ametros de ´
+las distribuciones normales?
+(3) Formular contrastes de hipotesis con distintos niveles de significaci ´ on para dife- ´
+rentes valores de la media y de la varianza en cada poblacion. ´
+(4) Formular contrastes de hipotesis con distintos niveles de significaci ´ on para la ´
+diferencia de medias y para la razon de varianzas de ambas poblaciones. A partir ´
+de estos contrastes, ¿se puede considerar que ambos algoritmos tienen tiempos de
+ejecucion similares?  -->
+
+# El fichero en formato RData se denomina BaseDatosPlasmaCompleta.RData.
+## Import libraries
+```{r setup, include=FALSE}
+library("ggplot2")
+library("dplyr")          # load
+```
+ 
+## Cargamos los datos que se encuentran en BaseDatosPlasmaCompleta.RData
+```{r}
+load("~/add_practices/practice1/datasets/Datos2poblaciones.RData")
+```
+
+## Obtenemos un resumen general de la información del dataset
+```{r}
+# Todas las variables cuantitativas
+numSummary(Datos[,, drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+```
+Este comando nos da la estimaciones puntuales dado que aun no conozo la funcion de densidad. Por lo que el valor de n juega un papel importante. Tanto de la media como de la desviacion tipica ambos algoritmos son estimaciones puntuales del valor teorico que solo conoceremos cuando se conozca solo tenemos aproximaciones.
+
+## Validamos que los datos siguen una distribucion Normal
+### TiempoAlg1
+```{r}
+# Histogram with density plot
+ggplot(Datos, aes(x=TiempoAlg1)) + 
+ geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
+ geom_density(alpha=.05, fill="#FF6666")
+
+with(Datos, Hist(TiempoAlg1, scale="frequency", breaks="Sturges", col="darkgray"))
+
+Boxplot( ~ TiempoAlg1, data=Datos, id=list(method="y"))
+
+normalityTest(~TiempoAlg1, test="shapiro.test", data=Datos) # Shapiro
+normalityTest(~TiempoAlg1, test="ad.test", data=Datos)   # Anderson-Darling
+
+
+# lillie.test(Dataset$TiempoAlg1)
+with(Datos, qqPlot(TiempoAlg1, dist="norm", id=list(method="y", n=2, labels=rownames(TiempoAlg1))))
+ 
+```
+### TiempoAlg2
+```{r}
+# Histogram with density plot
+ggplot(Datos, aes(x=TiempoAlg2)) + 
+ geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
+ geom_density(alpha=.05, fill="#FF6666")
+with(Datos, Hist(TiempoAlg2, scale="frequency", breaks="Sturges", col="darkgray"))
+
+
+Boxplot( ~ TiempoAlg2, data=Datos, id=list(method="y"))
+
+normalityTest(~TiempoAlg2, test="shapiro.test", data=Datos) # Shapiro
+normalityTest(~TiempoAlg2, test="ad.test", data=Datos)   # Anderson-Darling
+
+
+# lillie.test(Dataset$TiempoAlg1)
+with(Datos, qqPlot(TiempoAlg2, dist="norm", id=list(method="y", n=2, labels=rownames(TiempoAlg1))))
+ 
+```
+Ambos algoritmo siguen una distribucion Normal con un p-valor mayor a 0.05. Comprobado esto se procede a construir los intervalos de confianza.
+
+## Construimos intervalos de confianza de cada uno de los algoritmos
+### TiempoAlg1
+```{r}
+with(Datos,  t.test(TiempoAlg1, alternative='two.sided', mu=0.0, conf.level=.95))
+
+```
+tomamos en cuenta que estamos buscando el intervalo de confianza por lo que simplemente tomamos los valores de 41.90847 45.82922 y esperamos con una confianza de 95% que se encuentre la media, es decir que si siempre se construye una nueva muestra con esa funcion de distribucion el 95% de las veces la media se encontrara en ese intervalo de confianza. 
+
+### TiempoAlg2
+```{r}
+with(Datos,  t.test(TiempoAlg2, alternative='two.sided', mu=0.0, conf.level=.95))
+```
+tomamos en cuenta que estamos buscando el intervalo de confianza por lo que simplemente tomamos los valores de 49.32270 a 52.16172 y esperamos con una confianza de 95% que se encuentre la media, es decir que si siempre se construye una nueva muestra con esa funcion de distribucion el 95% de las veces la media se encontrara en ese intervalo de confianza. 
+
+
+### Conclusion
+Se podria pensar a la primera que los algoritmos son distintos dado que el rango de media arrojado por cada uno de forma separada no se solapa, pero este argumento es suficiente. Por lo que tendriamos que realizar otras pruebas para confirmar nuestra hipotesis. Caundo se estan trabajando los datos de una forma totalmente independiente por algoritmo 1 y 2 por lo que no es correcto llegar a una conclusion que afecta a ambas conjuntos de datos. Si queremos llegar a conclusiones validas debemos construir estimadores que contemplen de forma conjunta los datos.
+
+## Apilamos las variables del algoritmo 1 y 2 en una caolumna
+```{r}
+StackedData <- stack(Datos[, c("TiempoAlg1","TiempoAlg2")])
+names(StackedData) <- c("tiempoCPU", "algoritmo")
+
+# Validar esto con el profesor 
+numSummary(StackedData[,c("tiempoCPU"), drop=FALSE], statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+
+normalityTest(tiempoCPU~algoritmo, test="shapiro.test", data=StackedData)
+
+Boxplot(tiempoCPU~algoritmo, data=StackedData, id=list(method="y"))
+```
+
+## Validamos si las dos varianzas son iguales o no 
+```{r}
+
+Tapply(tiempoCPU~algoritmo, var, na.action = na.omit, data=StackedData)
+
+# Test F para dos varianzas
+var.test(tiempoCPU~algoritmo, alternative='two.sided', conf.level=.95, var.equal=TRUE, data=StackedData)
+
+```
+Con este resultado no se pueden asumir varianzas iguales el p-valor es menor a 0.05.
+
+### Nota:
+Bilateral -> contraste de igualdad(hacemos un cociente que nos permite determinar si es igual a uno, si se aleja del uno es que no son iguales las varianzas) realizamos un contraste de igualdad de las dos varianzas.
+
+
+## Validamos si las dos medias son iguales o no 
+```{r}
+# usamos hipotesis nula
+t.test(tiempoCPU~algoritmo, alternative='two.sided', conf.level=.95, var.equal=FALSE, data=StackedData)
+
+
+# t.test(tiempoCPU~algoritmo, alternative='two.sided', conf.level=.95, var.equal=TRUE, data=StackedData)
+
+```
+Esta prueba nos confirma que las medias no pueden ser iguales. En este caso se podria pensar que era obvio pero de igual forma este estudio es requerido en el ambito cientifico.
+
+
+
+```{r}
+
+
+```

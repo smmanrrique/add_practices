@@ -1,0 +1,175 @@
+---
+title: "Homicidios"
+author: "Shamuel Manrrique NIP:802400"
+NIP: "802400"
+date: "10/20/2020"
+output: pdf_document
+---
+
+# Ejercicio propuesto 2
+
+En el fichero de datos Homicidios.RData se tiene la variable cuantitativa Homicidios que indica el número de homicidios al año en las distintas regiones y subregiones de diferentes países del mundo.Además, se dispone de las variables cualitativas (factor) Region y Subregion.
+
+1. Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones.
+
+2. Agrupando por regiones/subregiones de dos en dos, decidir si el número de homicidios dependen de las regiones/subregiones consideradas. 
+
+
+# Import libraries
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library("RcmdrMisc")
+library("ggplot2")
+library("dplyr")          # load
+library("lawstat")
+library("sqldf")
+
+```
+ 
+# Cargar los datos de Homicidios.RData
+```{r}
+load("C:/Users/smmanrrique/3D Objects/unizar/add/aad_practices/practice1/datasets/Homicidios.RData")
+```
+ 
+# Resumen general de la información del dataset
+```{r}
+summary(Dataset)
+```
+ 
+# 1. Estadística descriptiva 
+
+Realizar una estadística descriptiva de la variable Homicidios agrupando por regiones y subregiones. 
+ 
+## Region
+
+#### Datos de Homicidios agrupando por regiones.
+```{r}
+# Homicidios por regiones
+numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Región, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+# Grafía de Boxplot de Homicidios por regiones
+Boxplot(Homicidios~Región, data=Dataset, id=list(method="y"))
+
+sqldf("SELECT  Región, COUNT(País) AS Count FROM Dataset GROUP BY Región order by count desc")
+```
+Observando los datos por región muestra una relación entre el número de países que conforman una región y la desviación estándar. El valor del skewness es alto en las regiones indica que la distribución tiene una asimetría positiva. Casi todas las regiones excepto América tienen un valor de kurtosis mayor a tres(leptokurtosis) es decir que existen valores atípicos en estas distribuciones. Sin embargo, aunque el valor de kurtosis en América es bajo es la región con mayor desviación estándar(11531.6791 sd) y esparcimiento(17463.00  IQR). 
+
+ 
+
+### Validar que los datos siguen una distribución Normal
+```{r}
+# Histogram with density plot
+ggplot(data=Dataset , aes(x=Homicidios)) + 
+ geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
+ geom_density(alpha=.05, fill="#FF6666")
+
+# Prueba de normalidad por Región
+normalityTest(Homicidios~Región, test="shapiro.test", data=Dataset) # Shapiro
+normalityTest(Homicidios~Región, test="ad.test", data=Dataset)   # Anderson-Darling
+normalityTest(Homicidios~Región, test="lillie.test", data=Dataset) 
+normalityTest(Homicidios~Región, test="cvm.test", data=Dataset)  # Cramer
+
+# qqPlot para la validación de normalidad
+with(Dataset, qqPlot(Homicidios, dist="norm", id=list(method="y", n=2, labels=rownames(Homicidios))))
+ 
+```
+Los valores obtenidos en cada uno de los p-valores indican que la función de probabilidad no sigue una distribución normal, para realizar las pruebas de varianza y media iguales se usaran otras heurísticas que no requieran normalidad.
+
+### Validar si las varianzas son iguales o no 
+```{r}
+# Test Levene para dos varianzas con distribuciones distintas a la normal
+leveneTest(filter(Dataset, Región=="África" )$Homicidios~filter(Dataset, Región=="África" )$Subregión, data=Dataset, center=mean)
+
+leveneTest(filter(Dataset, Región=="África" )$Homicidios~filter(Dataset, Región=="África" )$Subregión, data=Dataset)
+
+```
+Con el valor obtenido menor a 0.05 no cumple con la hipótesis para decir que las varianzas son iguales, por lo que asumimos varianzas distintas.
+
+### Validar si las dos medias son iguales o no 
+
+Para aplicar el test de wilcoxon si la variable factor como en este caso tiene más de dos alternativas, se debe evaluar de cada una por pares, de lo contrario no será posible hacer la prueba con wilcox.test. 
+```{r}
+wilcox.test( filter(Dataset, Región=="África")$Homicidios, filter(Dataset, Región=="América")$Homicidios)
+
+wilcox.test( filter(Dataset, Región=="África")$Homicidios, filter(Dataset, Región=="Asia")$Homicidios)
+ 
+wilcox.test( filter(Dataset, Región=="África")$Homicidios, filter(Dataset, Región=="Europa")$Homicidios)
+
+wilcox.test( filter(Dataset, Región=="África")$Homicidios, filter(Dataset, Región=="Oceanía")$Homicidios)
+
+```
+Por ser muchas las comparativas que se tendrían que hacer se tomó como región base África y se comparó si tenía igual media con el resto de regiones. El resultado arrojó que en todas las regiones se rechaza la hipótesis nula por lo que la media es distinta,  excepto com America tienen la misma media con un p-value = 0.817.
+
+---
+
+## Subregion
+
+### Datos de Homicidios agrupando por subregiones.
+```{r}
+# Homicidios por regiones
+numSummary(Dataset[,c("Homicidios"), drop=FALSE], groups = Dataset$Subregión, statistics=c("mean", "sd", "IQR", "quantiles"), quantiles=c(0,.25,.5,.75,1))
+
+
+# Grafía de Boxplot de Homicidios por regiones
+Boxplot(Homicidios~Subregión, data=Dataset, id=list(method="y"))
+```
+Se obtuvo la información de las medias y desviación estándar por subregión, los valores de skewness y kurtosis no se pudieron calcular dado que muchas de las subregiones no tenía muestras mayores a cuatro lo cual era requerido para para estos test. Vemos que los valores de desviación son bastante altos.
+
+### Subregiones de la región Áfricana
+```{r}
+africa_sub = filter(Dataset, Región=="África")
+
+# Homicidios por regiones
+numSummary(africa_sub[,c("Homicidios"), drop=TRUE], groups = africa_sub$Subregión, statistics=c("mean", "sd", "IQR", "quantiles","skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+# Grafía de Boxplot de Homicidios por regiones
+Boxplot(africa_sub$Homicidios~africa_sub$Subregión)
+```
+
+Por subregión africana todas menos África Oriental son asimétricas positivas, además que los valores de la media  de África Central y África del Sur son doble y triple respecto a las demás. También son estas dos subregiones que tienen este valor de kurtosis más alto, es decir que posiblemente existan valores atípicos en estas distribuciones.
+
+### Validamos que los datos siguen una distribución Normal
+```{r, warning=FALSE}
+# Prueba de normalidad por Región
+#normality Test(filter(Dataset, Región=="África" )$Homicidios~filter(Dataset, Región=="África" )$Subregión, test="shapiro.test", data=Dataset) # Shapiro
+#normalityTest(filter(Dataset, Región=="África" )$Homicidios~filter(Dataset, Región=="África" )$Subregión, test="ad.test", data=Dataset)   # Anderson-Darling
+normalityTest(filter(Dataset, Región=="África" )$Homicidios~filter(Dataset, Región=="África" )$Subregión, test="lillie.test", data=Dataset) 
+#normalityTest(filter(Dataset, Región=="África" )$Homicidios~filter(Dataset, Región=="África" )$Subregión, test="cvm.test", data=Dataset)  # Cramer
+
+# qqPlot para la validación de normalidad
+with(Dataset, qqPlot(filter(Dataset, Región=="África" )$Homicidios, dist="norm", id=list(method="y", n=2, labels=rownames(Homicidios))))
+ 
+```
+Se obtuvo que en la mayoría de los casos las subregiones no siguen  una distribución  normal, dado que el p-value es menor a 0.05.
+
+### Validamos si las dos varianzas son iguales o no 
+```{r}
+# Test Levene para dos varianzas con distribuciones distintas a la normal
+leveneTest(Homicidios~Subregión, data=Dataset)
+
+leveneTest(Homicidios~Subregión, data=Dataset, center=mean)
+
+```
+Al parecer con el valor obtenido menor a 0.05 no es significativo para decir que las varianzas son iguales Por lo que asumimos varianzas distintas.
+
+### Validamos si las dos medias son iguales o no 
+```{r}
+africa = filter(Dataset,  Región=="África")
+# table(africa$Subregión)
+ 
+wilcox.test( filter(africa, Subregión=="África Central")$Homicidios, filter(Dataset, Subregión=="África del Norte")$Homicidios)
+
+wilcox.test( filter(africa, Subregión=="África Central")$Homicidios, filter(Dataset, Subregión=="África del Sur")$Homicidios)
+
+wilcox.test( filter(africa, Subregión=="África Central")$Homicidios, filter(Dataset, Subregión=="África Occidental")$Homicidios)
+
+wilcox.test( filter(africa, Subregión=="África Central")$Homicidios, filter(Dataset, Subregión=="África Oriental")$Homicidios)
+
+```
+Seleccionando a la región Africana y estudiando sus subregiones con el test de Wilcoxon no podemos asumir que las medias son distintas dado que los valores de los p-value son mayores que 0.05. 
+
+
+
+
+
+
+

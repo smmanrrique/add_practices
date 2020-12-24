@@ -1,0 +1,68 @@
+---
+title: "inferencia_sept_2018"
+author: "Shamuel Manrrique"
+date: "10/25/2020"
+output: html_document
+---
+
+# El fichero en formato RData se denomina BaseDatosPlasmaCompleta.RData.
+## Import libraries
+```{r setup, include=FALSE}
+library("ggplot2")
+library("dplyr")          # load
+```
+ 
+## Cargamos los datos que se encuentran en BaseDatosPlasmaCompleta.RData
+```{r}
+load("~/add_practices/practice1/datasets/InferenciaSept2018.RData")
+```
+
+## Obtenemos un resumen general de la información del dataset
+```{r}
+# Todas las variables cuantitativas
+numSummary(Dataset[,c("CPUTime"), drop=FALSE],groups = Dataset$Algoritmo, statistics=c("mean", "sd", "IQR", "quantiles", "skewness", "kurtosis"), quantiles=c(0,.25,.5,.75,1))
+
+Boxplot(CPUTime~Algoritmo, data=Dataset, id=list(method="y"))
+
+```
+
+
+## Validamos que los datos siguen una distribucion Normal
+```{r}
+# Histogram with density plot
+ggplot(data=Dataset , aes(x=CPUTime)) + 
+ geom_histogram(aes(y=..density..), colour="gray", fill="white", bins = 30) +
+ geom_density(alpha=.05, fill="#FF6666")
+
+# Prueba de normalidad por groupo
+normalityTest(CPUTime~Algoritmo, test="shapiro.test", data=Dataset) # Shapiro
+normalityTest(CPUTime~Algoritmo, test="ad.test", data=Dataset)   # Anderson-Darling
+
+
+# lillie.test(Dataset$TiempoAlg1)
+with(Dataset, qqPlot(CPUTime, dist="norm", id=list(method="y", n=2, labels=rownames(CPUTime))))
+ 
+```
+Al realizar el test de normalidad agrupando por algoritmo optengos valores de p-valor mayor a 0.05. Por lo que puedo decir que los datos siguen una distribucion normal, y por ende puedo aplicar el test de la F.
+
+## Validamos si las dos varianzas son iguales o no 
+```{r}
+
+Tapply(CPUTime~Algoritmo, var, na.action = na.omit, data=Dataset)
+
+# Test F para dos varianzas
+var.test(CPUTime~Algoritmo, alternative='two.sided', conf.level=.95, var.equal=TRUE, data=Dataset)
+
+```
+Con este resultado no se pueden asumir varianzas iguales. Dado que el 1 cae en el intervalo.
+
+## Validamos si las dos medias son iguales o no 
+```{r}
+# usamos hipotesis nula
+t.test(CPUTime~Algoritmo, alternative='two.sided', conf.level=.95, var.equal=TRUE, data=Dataset)
+
+```
+Esta prueba nos confirma que las medias son iguales. El cero cae en el intervalo.El valor del p-value me dice que si voy a tomar todas las decisiones con un alpha de 0.05 entonces se puede asumir que el tiempo medio de ejecucion son iguales. Como el p-value esta entre 0.5 y 1 se podria hacer mas pruebas para validar si el p-value se decanta.
+
+# Coclusion 
+No tenemos motivos para decir que un algoritmo es mejor que el otro.
